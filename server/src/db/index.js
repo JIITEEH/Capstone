@@ -13,4 +13,16 @@ db.exec('PRAGMA foreign_keys = ON;');
 const schemaPath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'schema.sql');
 db.exec(fs.readFileSync(schemaPath, 'utf8'));
 
+export function transaction(fn) {
+  db.exec('BEGIN');
+  try {
+    const result = fn();
+    db.exec('COMMIT');
+    return result;
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+}
+
 export default db;

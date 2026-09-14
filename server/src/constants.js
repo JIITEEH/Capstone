@@ -1,0 +1,21 @@
+export const ROLES = ['student', 'adviser', 'admin'];
+
+// Thesis stages in the order students complete them
+export const STAGES = {
+  proposal: 'Proposal',
+  chapters_1_3: 'Chapters 1–3',
+  chapters_4_5: 'Chapters 4–5',
+  final: 'Final Manuscript',
+};
+
+export const THESIS_STATUSES = {
+  draft: 'Draft',
+  under_review: 'Under review',
+  revisions_required: 'Needs revisions',
+  in_progress: 'In progress',
+  completed: 'Completed',
+};
+
+export const REVIEW_DECISIONS = ['approved', 'revisions_requested'];
+
+export const ALLOWED_UPLOAD_EXTENSIONS = ['.pdf', '.doc', '.docx'];
