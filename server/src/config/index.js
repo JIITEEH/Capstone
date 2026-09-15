@@ -19,7 +19,8 @@ const config = {
   // "Keep me signed in" gets the longer session
   jwtExpiresIn: '12h',
   jwtRememberExpiresIn: '30d',
-  maxUploadBytes: 20 * 1024 * 1024,
+  // Leaves room for image-heavy final manuscripts and scanned pages
+  maxUploadBytes: 50 * 1024 * 1024,
 };
 
 export default config;

@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { FileText, Upload } from 'lucide-react';
 import { formatBytes } from '../../utils/format.js';
 
-const MAX_BYTES = 20 * 1024 * 1024;
+// Keep in sync with maxUploadBytes in server/src/config/index.js
+const MAX_MB = 50;
+const MAX_BYTES = MAX_MB * 1024 * 1024;
 
 export default function SubmissionForm({ stages, onSubmit, onCancel }) {
   const [stage, setStage] = useState(stages[0]?.key ?? '');
@@ -16,7 +18,7 @@ export default function SubmissionForm({ stages, onSubmit, onCancel }) {
     setError('');
     if (chosen && chosen.size > MAX_BYTES) {
       setFile(null);
-      return setError('File must be 20 MB or smaller');
+      return setError(`File must be ${MAX_MB} MB or smaller`);
     }
     setFile(chosen);
   }
@@ -66,7 +68,7 @@ export default function SubmissionForm({ stages, onSubmit, onCancel }) {
           ) : (
             <span>
               <strong>Choose a file</strong>
-              <span className="muted"> PDF, DOC, or DOCX, up to 20 MB</span>
+              <span className="muted"> PDF, DOC, or DOCX, up to {MAX_MB} MB</span>
             </span>
           )}
         </label>
