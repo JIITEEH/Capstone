@@ -2066,7 +2066,9 @@ a.bar-row:hover .bar-label {
   place-items: center;
   min-height: 100vh;
   padding: 32px;
-  background: linear-gradient(160deg, #c5ccda 0%, #a8b1c3 100%);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(123, 156, 245, 0.18), transparent 60%),
+    linear-gradient(165deg, #7c879f 0%, #5b6680 100%);
 }
 
 .auth-shell {
@@ -2078,10 +2080,8 @@ a.bar-row:hover .bar-label {
   min-height: min(820px, calc(100vh - 64px));
   padding: 16px;
   border-radius: 40px;
-  background:
-    radial-gradient(circle at 0% 100%, rgba(123, 156, 245, 0.38), transparent 55%),
-    linear-gradient(185deg, #eef0f4 0%, #e9edf5 50%, #dde7fc 100%);
-  box-shadow: 0 40px 80px -30px rgba(15, 22, 41, 0.45);
+  background: linear-gradient(180deg, #eceff4 0%, #e1e6f0 60%, #d4ddf2 100%);
+  box-shadow: 0 40px 90px -30px rgba(10, 16, 36, 0.6);
 }
 
 .auth-logo {
