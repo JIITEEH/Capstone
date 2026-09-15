@@ -21,7 +21,7 @@ Open http://localhost:5173. The API runs at http://localhost:3001/api.
 
 ### Demo accounts
 
-Every seeded account uses the password **`password123`**. In development, the login page has buttons that fill these in.
+The adviser and student accounts use the password **`password123`**. The admin account does not: set `SEED_ADMIN_PASSWORD` in `server/.env` before seeding, or leave it unset and copy the random password that `npm run db:seed` prints. In development, the login page has buttons that fill these accounts in.
 
 | Role    | Email                  | What you'll see                                                        |
 | ------- | ---------------------- | ---------------------------------------------------------------------- |

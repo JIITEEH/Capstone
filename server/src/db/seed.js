@@ -2,8 +2,19 @@
 // Run with: npm run db:seed
 import fs from 'node:fs';
 import path from 'node:path';
+import { randomBytes } from 'node:crypto';
 import config from '../config/index.js';
 import { DEMO_PASSWORD } from '../constants.js';
+
+// The admin never uses the public demo password. Set SEED_ADMIN_PASSWORD in server/.env to
+// choose one; otherwise a random password is generated and printed once at the end.
+// A blank value (as copied from .env.example) counts as unset
+const adminPasswordFromEnv = process.env.SEED_ADMIN_PASSWORD || undefined;
+if (adminPasswordFromEnv !== undefined && adminPasswordFromEnv.length < 8) {
+  console.error('SEED_ADMIN_PASSWORD must be at least 8 characters. Nothing was changed.');
+  process.exit(1);
+}
+const adminPassword = adminPasswordFromEnv || randomBytes(12).toString('base64url');
 
 for (const suffix of ['', '-wal', '-shm', '-journal']) {
   fs.rmSync(config.databasePath + suffix, { force: true });
@@ -17,6 +28,7 @@ const { hashPassword } = await import('../utils/password.js');
 const Thesis = await import('../models/thesisModel.js');
 
 const passwordHash = hashPassword(DEMO_PASSWORD);
+const adminPasswordHash = hashPassword(adminPassword);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -25,8 +37,8 @@ const passwordHash = hashPassword(DEMO_PASSWORD);
 const insertUser = db.prepare(
   "INSERT INTO users (name, email, password_hash, role, program, created_at) VALUES (?, ?, ?, ?, ?, datetime('now', ?))",
 );
-function user(name, email, role, program, ago) {
-  return Number(insertUser.run(name, email, passwordHash, role, program, ago).lastInsertRowid);
+function user(name, email, role, program, ago, hash = passwordHash) {
+  return Number(insertUser.run(name, email, hash, role, program, ago).lastInsertRowid);
 }
 
 const insertThesis = db.prepare(
@@ -128,7 +140,14 @@ function schedule({ thesisId, type, title, day, hour, minutes, mode, location, n
 
 db.exec('BEGIN');
 
-const admin = user('System Administrator', 'jtcatimbang1019@gmail.com', 'admin', 'Graduate School Office', '-90 days');
+const admin = user(
+  'System Administrator',
+  'jtcatimbang1019@gmail.com',
+  'admin',
+  'Graduate School Office',
+  '-90 days',
+  adminPasswordHash,
+);
 const santos = user('Dr. Maria Santos', 'maria.santos@tms.edu', 'adviser', 'Department of Computer Science', '-80 days');
 const ana = user('Ana Cruz', 'ana.cruz@tms.edu', 'student', 'BS Computer Science', '-50 days');
 
@@ -216,7 +235,13 @@ Thesis.recomputeStatus(anaThesis);
 
 db.exec('COMMIT');
 
-console.log('Database seeded. Every demo account uses the password:', DEMO_PASSWORD);
-console.log('  Admin:   jtcatimbang1019@gmail.com');
-console.log('  Adviser: maria.santos@tms.edu');
-console.log('  Student: ana.cruz@tms.edu');
+console.log('Database seeded.');
+console.log(`  Adviser: maria.santos@tms.edu  (password: ${DEMO_PASSWORD})`);
+console.log(`  Student: ana.cruz@tms.edu      (password: ${DEMO_PASSWORD})`);
+if (adminPasswordFromEnv) {
+  console.log('  Admin:   jtcatimbang1019@gmail.com  (password: the SEED_ADMIN_PASSWORD from .env)');
+} else {
+  console.log(`  Admin:   jtcatimbang1019@gmail.com  (password: ${adminPassword})`);
+  console.log('  This admin password was generated just now and is not saved anywhere. Copy it,');
+  console.log('  or set SEED_ADMIN_PASSWORD in server/.env and seed again.');
+}
