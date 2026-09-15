@@ -4,11 +4,9 @@ import DashboardHeader from '../../components/dashboard/DashboardHeader.jsx';
 import PeopleCard from '../../components/dashboard/PeopleCard.jsx';
 import ProgressGauge, { groupStatuses } from '../../components/dashboard/ProgressGauge.jsx';
 import TaskListCard from '../../components/dashboard/TaskListCard.jsx';
-import TimeTracker from '../../components/dashboard/TimeTracker.jsx';
 import WeeklyActivity from '../../components/dashboard/WeeklyActivity.jsx';
 import { LoadState } from '../../components/ui/Feedback.jsx';
 import StatCard from '../../components/ui/StatCard.jsx';
-import { useAuth } from '../../context/AuthContext.jsx';
 import useApi from '../../hooks/useApi.js';
 import { api } from '../../services/api.js';
 import { formatDate, greeting, plural } from '../../utils/format.js';
@@ -29,7 +27,6 @@ function summary(stats) {
 }
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
   const { data, loading, error, reload } = useApi(() => api.dashboard(), [], { refreshInterval: 30000 });
 
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
@@ -119,7 +116,6 @@ export default function AdminDashboard() {
             emptyIcon={CircleCheck}
             emptyTitle="Every thesis has an adviser"
           />
-          <TimeTracker userId={user.id} />
         </div>
       </div>
     </div>

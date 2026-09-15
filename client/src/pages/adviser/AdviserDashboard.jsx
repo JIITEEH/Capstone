@@ -4,7 +4,6 @@ import DashboardHeader from '../../components/dashboard/DashboardHeader.jsx';
 import PeopleCard, { thesisStatusPill } from '../../components/dashboard/PeopleCard.jsx';
 import ProgressGauge, { groupStatuses } from '../../components/dashboard/ProgressGauge.jsx';
 import TaskListCard, { STAGE_GLYPHS } from '../../components/dashboard/TaskListCard.jsx';
-import TimeTracker from '../../components/dashboard/TimeTracker.jsx';
 import WeeklyActivity from '../../components/dashboard/WeeklyActivity.jsx';
 import { LoadState } from '../../components/ui/Feedback.jsx';
 import StatCard from '../../components/ui/StatCard.jsx';
@@ -137,7 +136,6 @@ export default function AdviserDashboard() {
             emptyTitle="You're all caught up"
             emptyMessage="New submissions from your advisees will appear here."
           />
-          <TimeTracker userId={user.id} />
         </div>
       </div>
     </div>

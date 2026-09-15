@@ -4,7 +4,6 @@ import DashboardHeader from '../../components/dashboard/DashboardHeader.jsx';
 import PeopleCard from '../../components/dashboard/PeopleCard.jsx';
 import ProgressGauge from '../../components/dashboard/ProgressGauge.jsx';
 import TaskListCard, { STAGE_GLYPHS } from '../../components/dashboard/TaskListCard.jsx';
-import TimeTracker from '../../components/dashboard/TimeTracker.jsx';
 import WeeklyActivity from '../../components/dashboard/WeeklyActivity.jsx';
 import { LoadState } from '../../components/ui/Feedback.jsx';
 import StageTracker from '../../components/ui/StageTracker.jsx';
@@ -166,7 +165,6 @@ export default function StudentDashboard() {
             }
             items={stageItems(thesis, approved, currentKey)}
           />
-          <TimeTracker userId={user.id} />
         </div>
       </div>
     </div>
