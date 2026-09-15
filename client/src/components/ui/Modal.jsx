@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 export default function Modal({ open, title, description, onClose, children, size = 'md' }) {
@@ -17,7 +18,9 @@ export default function Modal({ open, title, description, onClose, children, siz
 
   if (!open) return null;
 
-  return (
+  // Rendered into <body>: cards animate in with a lingering transform, which would otherwise
+  // trap this position: fixed overlay inside whichever card opened the dialog
+  return createPortal(
     <div
       className="modal-overlay"
       onMouseDown={(event) => {
@@ -36,7 +39,8 @@ export default function Modal({ open, title, description, onClose, children, siz
         </div>
         <div className="modal-body">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
