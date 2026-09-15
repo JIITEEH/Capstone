@@ -6,7 +6,6 @@ import { useCallback, useEffect, useState } from 'react';
 export default function useApi(fetcher, deps = [], { refreshInterval } = {}) {
   const [state, setState] = useState({ data: null, loading: true, error: null });
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const load = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setState((prev) => ({ ...prev, loading: true, error: null }));
     try {
@@ -15,6 +14,8 @@ export default function useApi(fetcher, deps = [], { refreshInterval } = {}) {
     } catch (err) {
       if (!silent) setState((prev) => ({ ...prev, loading: false, error: err.message }));
     }
+    // Callers pass their own dependency list, so the fetcher is re-created only when those change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
   useEffect(() => {

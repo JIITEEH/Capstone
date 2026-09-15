@@ -231,6 +231,10 @@ Capstone/
 | `npm run build`   | Builds the website into `client/dist`                 |
 | `npm start`       | Runs the API and serves `client/dist` if it exists    |
 | `npm run db:seed` | Resets the database and uploads, then loads demo data |
+| `npm run lint`    | Checks the code with ESLint                           |
+| `npm test`        | Runs the API tests (each on a throwaway database) and client tests |
+
+Every push and pull request to `main` or `development` runs lint, tests, and the build on GitHub Actions (`.github/workflows/ci.yml`).
 
 ## Production notes
 
