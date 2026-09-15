@@ -2060,18 +2060,107 @@ a.bar-row:hover .bar-label {
 /* ==========================================================================
    Auth pages
    ========================================================================== */
-/* One large rounded card on a slate page: form on the left, blue visual on the right */
+/* One large liquid glass card over flowing colour: form on the left, blue visual on the right.
+   --mx and --my (0 to 1) track the cursor; AuthLayout eases them toward it. */
 .auth-page {
+  --mx: 0.5;
+  --my: 0.4;
+  position: relative;
   display: grid;
   place-items: center;
   min-height: 100vh;
+  overflow: hidden;
   padding: 32px;
-  background:
-    radial-gradient(ellipse at 50% 0%, rgba(123, 156, 245, 0.18), transparent 60%),
-    linear-gradient(165deg, #7c879f 0%, #5b6680 100%);
+  background: linear-gradient(160deg, #56648a 0%, #34406a 50%, #1f2a4d 100%);
+}
+
+.liquid {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Soft colour pools. Each drifts on its own loop and shifts with the cursor at its own depth. */
+.liquid-blob {
+  position: absolute;
+  border-radius: 50%;
+  translate: calc((var(--mx) - 0.5) * var(--depth)) calc((var(--my) - 0.5) * var(--depth));
+  animation: liquid-drift 24s ease-in-out infinite;
+  will-change: transform, translate;
+}
+
+.liquid-blob-1 {
+  --depth: -90px;
+  top: -22vmax;
+  left: -16vmax;
+  width: 62vmax;
+  height: 62vmax;
+  background: radial-gradient(circle, rgba(36, 81, 214, 0.9), rgba(36, 81, 214, 0) 65%);
+}
+
+.liquid-blob-2 {
+  --depth: 130px;
+  top: -12vmax;
+  right: -20vmax;
+  width: 52vmax;
+  height: 52vmax;
+  background: radial-gradient(circle, rgba(143, 176, 255, 0.8), rgba(143, 176, 255, 0) 65%);
+  animation-duration: 28s;
+  animation-delay: -9s;
+}
+
+.liquid-blob-3 {
+  --depth: -70px;
+  bottom: -28vmax;
+  left: 18vmax;
+  width: 58vmax;
+  height: 58vmax;
+  background: radial-gradient(circle, rgba(15, 42, 122, 0.95), rgba(15, 42, 122, 0) 65%);
+  animation-duration: 32s;
+  animation-delay: -15s;
+}
+
+.liquid-blob-4 {
+  --depth: 100px;
+  right: -10vmax;
+  bottom: -20vmax;
+  width: 46vmax;
+  height: 46vmax;
+  background: radial-gradient(circle, rgba(123, 156, 245, 0.7), rgba(123, 156, 245, 0) 65%);
+  animation-duration: 26s;
+  animation-delay: -4s;
+}
+
+/* Light that follows the cursor through the liquid */
+.liquid-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40vmax;
+  height: 40vmax;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(205, 220, 255, 0.5), rgba(205, 220, 255, 0) 62%);
+  transform: translate(calc(var(--mx) * 100vw - 50%), calc(var(--my) * 100vh - 50%));
+  will-change: transform;
+}
+
+@keyframes liquid-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(6vmax, 4vmax) scale(1.08);
+  }
+  66% {
+    transform: translate(-4vmax, 6vmax) scale(0.95);
+  }
 }
 
 .auth-shell {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
   gap: 16px;
@@ -2081,7 +2170,13 @@ a.bar-row:hover .bar-label {
   padding: 16px;
   border-radius: 40px;
   background: linear-gradient(180deg, #eceff4 0%, #e1e6f0 60%, #d4ddf2 100%);
-  box-shadow: 0 40px 90px -30px rgba(10, 16, 36, 0.6);
+  box-shadow: 0 40px 90px -30px rgba(5, 10, 30, 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-blob {
+    animation: none;
+  }
 }
 
 .auth-logo {
@@ -2107,7 +2202,7 @@ a.bar-row:hover .bar-label {
   flex-wrap: wrap;
   gap: 8px 16px;
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .auth-visual {
@@ -2548,10 +2643,10 @@ a.bar-row:hover .bar-label {
 .demo-accounts > summary {
   width: fit-content;
   margin: 0 auto;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 12px;
   cursor: pointer;
-  opacity: 0.75;
+  opacity: 0.9;
   transition: opacity 0.15s, color 0.15s;
 }
 
