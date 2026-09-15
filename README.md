@@ -42,7 +42,7 @@ Every rule below is enforced by the API. The UI also hides what a role can't use
 | Add or remove group members (up to 5)     | Group leader; any member can leave | —                        | ✅                           |
 | View theses                               | Own group's only           | Assigned advisees only           | All                          |
 | Edit thesis title, abstract, keywords     | Own, until completed       | —                                | —                            |
-| Upload submissions (PDF/DOC/DOCX, 20 MB)  | Own thesis                 | —                                | —                            |
+| Upload submissions (PDF/DOC/DOCX, 50 MB)  | Own thesis                 | —                                | —                            |
 | Download submission files                 | Own                        | Advisees                         | All                          |
 | Review (approve / request revisions)      | —                          | Advisees                         | — (read-only)                |
 | Comment on submissions                    | Own                        | Advisees                         | — (read-only)                |
@@ -231,6 +231,10 @@ Capstone/
 | `npm run build`   | Builds the website into `client/dist`                 |
 | `npm start`       | Runs the API and serves `client/dist` if it exists    |
 | `npm run db:seed` | Resets the database and uploads, then loads demo data |
+| `npm run lint`    | Checks the code with ESLint                           |
+| `npm test`        | Runs the API tests (each on a throwaway database) and client tests |
+
+Every push and pull request to `main` or `development` runs lint, tests, and the build on GitHub Actions (`.github/workflows/ci.yml`).
 
 ## Production notes
 
