@@ -49,7 +49,9 @@ export default function ThesisDetail({ thesisId }) {
   const approved = approvedStageKeys(thesis);
   const percent = Math.round((approved.length / STAGES.length) * 100);
   const hasPending = submissions.some((s) => s.status === 'pending');
-  const openStages = STAGES.filter((stage) => !approved.includes(stage.key));
+  // Stages unlock in order, so only the first unapproved stage can be submitted (the API enforces this too)
+  const nextStage = STAGES.find((stage) => !approved.includes(stage.key));
+  const openStages = nextStage ? [nextStage] : [];
 
   // Thesis content belongs to the student; advisers and admins schedule events
   const canEdit = isStudent && thesis.status !== 'completed';

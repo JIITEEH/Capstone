@@ -127,6 +127,12 @@ export function createSubmission(req, res) {
     if (Submission.isStageApproved(thesis.id, stage)) {
       throw new HttpError(400, `${STAGES[stage]} has already been approved`);
     }
+    // Stages unlock in order: every earlier stage must be approved first
+    const order = Object.keys(STAGES);
+    const blocking = order.slice(0, order.indexOf(stage)).find((key) => !Submission.isStageApproved(thesis.id, key));
+    if (blocking) {
+      throw new HttpError(400, `${STAGES[blocking]} must be approved before you can submit ${STAGES[stage]}`);
+    }
     if (!req.file) throw new HttpError(400, 'Attach your manuscript file');
 
     const submission = transaction(() => {
