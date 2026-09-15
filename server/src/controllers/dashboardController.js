@@ -1,5 +1,6 @@
 import * as Activity from '../models/activityModel.js';
-import * as Comment from '../models/commentModel.js';
+import * as Review from '../models/reviewModel.js';
+import * as Schedule from '../models/scheduleModel.js';
 import * as Stats from '../models/statsModel.js';
 import * as Submission from '../models/submissionModel.js';
 import * as Thesis from '../models/thesisModel.js';
@@ -7,20 +8,20 @@ import * as User from '../models/userModel.js';
 
 function studentDashboard(user) {
   const thesis = Thesis.findByStudent(user.id);
-  if (!thesis) return { thesis: null, stats: null, submissions: [], feedback: [], activity: [] };
+  if (!thesis) return { thesis: null, stats: null, feedback: [], schedule: [], activity: [], weeklyActivity: [] };
 
-  const submissions = Submission.listByThesis(thesis.id);
   return {
     thesis,
     stats: {
-      submissions: submissions.length,
+      submissions: thesis.submission_count,
       pending: thesis.pending_count,
       approvedStages: thesis.approved_stages,
-      feedback: Comment.countForStudent(user.id),
+      feedback: Review.countFeedbackForStudent(user.id),
     },
-    submissions: submissions.slice(0, 5),
-    feedback: Comment.recentForStudent(user.id, 5),
+    feedback: Review.recentFeedbackForStudent(user.id, 5),
+    schedule: Schedule.list({ studentId: user.id, range: 'upcoming', limit: 4 }),
     activity: Activity.listRecent({ thesisId: thesis.id, limit: 8 }),
+    weeklyActivity: Activity.listSince({ thesisId: thesis.id }),
   };
 }
 
@@ -36,7 +37,9 @@ function adviserDashboard(user) {
     },
     pending,
     theses,
+    schedule: Schedule.list({ adviserId: user.id, range: 'upcoming', limit: 4 }),
     activity: Activity.listRecent({ adviserId: user.id, limit: 8 }),
+    weeklyActivity: Activity.listSince({ adviserId: user.id }),
   };
 }
 
@@ -46,7 +49,9 @@ function adminDashboard() {
     statusBreakdown: Stats.statusBreakdown(),
     advisers: User.listAdvisers(),
     unassigned: Thesis.list({ unassigned: true }).slice(0, 5),
+    schedule: Schedule.list({ range: 'upcoming', limit: 4 }),
     activity: Activity.listRecent({ limit: 10 }),
+    weeklyActivity: Activity.listSince(),
   };
 }
 

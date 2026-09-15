@@ -3,6 +3,7 @@ import { REVIEW_DECISIONS, STAGES } from '../constants.js';
 import { transaction } from '../db/index.js';
 import * as Activity from '../models/activityModel.js';
 import * as Comment from '../models/commentModel.js';
+import * as Review from '../models/reviewModel.js';
 import * as Submission from '../models/submissionModel.js';
 import * as Thesis from '../models/thesisModel.js';
 import { canViewThesis } from '../services/access.js';
@@ -26,24 +27,23 @@ export function reviewSubmission(req, res) {
   const { submission, thesis } = loadSubmission(req.user, req.params.id);
   const body = req.body ?? {};
   const decision = oneOf(body.decision, REVIEW_DECISIONS, 'decision');
-  const comment =
+  const feedback =
     decision === 'revisions_requested'
-      ? requireText(body.comment, 'An explanation of the revisions', { max: 3000 })
-      : optionalText(body.comment, 'Comment', { max: 3000 });
+      ? requireText(body.feedback, 'An explanation of the revisions', { max: 3000 })
+      : optionalText(body.feedback, 'Feedback', { max: 3000 });
 
   if (submission.status !== 'pending') throw new HttpError(400, 'This submission has already been reviewed');
 
   const stage = STAGES[submission.stage];
   const updated = transaction(() => {
-    const result = Submission.review(submission.id, { status: decision, reviewerId: req.user.id });
-    if (comment) Comment.create({ submissionId: submission.id, authorId: req.user.id, body: comment });
+    Review.create({ submissionId: submission.id, reviewerId: req.user.id, decision, feedback });
     Thesis.recomputeStatus(thesis.id);
     Activity.log(
       thesis.id,
       req.user.id,
       decision === 'approved' ? `approved ${stage}` : `requested revisions on ${stage}`,
     );
-    return result;
+    return Submission.findById(submission.id);
   });
   res.json(updated);
 }

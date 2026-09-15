@@ -30,6 +30,62 @@ export function timeAgo(value) {
   return formatDate(value);
 }
 
+export function formatTime(value) {
+  const date = parseDate(value);
+  return date ? date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : '';
+}
+
+export function dayParts(value) {
+  const date = parseDate(value);
+  return {
+    month: date.toLocaleDateString(undefined, { month: 'short' }),
+    day: date.getDate(),
+    weekday: date.toLocaleDateString(undefined, { weekday: 'short' }),
+  };
+}
+
+// "Today", "Tomorrow", "In 5 days" for upcoming events
+export function timeUntil(value) {
+  const date = parseDate(value);
+  if (!date) return '';
+  const minutes = Math.round((date.getTime() - Date.now()) / 60000);
+  if (minutes <= 0) return 'Happening now';
+  if (minutes < 60) return `In ${minutes} min`;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(date);
+  target.setHours(0, 0, 0, 0);
+  const days = Math.round((target.getTime() - today.getTime()) / 86400000);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Tomorrow';
+  return `In ${days} days`;
+}
+
+// Value for <input type="datetime-local"> in the viewer's timezone
+export function toLocalInputValue(value) {
+  const date = parseDate(value);
+  if (!date) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+export function formatDuration(minutes) {
+  if (minutes < 60) return `${minutes} min`;
+  const hours = minutes / 60;
+  return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+}
+
+export function greeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+export function todayLabel() {
+  return new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+}
+
 export function formatBytes(bytes) {
   if (!bytes) return '—';
   const units = ['B', 'KB', 'MB', 'GB'];

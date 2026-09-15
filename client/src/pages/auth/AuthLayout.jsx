@@ -10,6 +10,8 @@ export default function AuthLayout({ children }) {
   return (
     <div className="auth-page">
       <aside className="auth-brand">
+        <div className="auth-orb auth-orb-1" aria-hidden="true" />
+        <div className="auth-orb auth-orb-2" aria-hidden="true" />
         <div className="auth-brand-logo">
           <div className="brand-mark">
             <GraduationCap size={22} />

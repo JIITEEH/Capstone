@@ -8,7 +8,7 @@ export function overview() {
          (SELECT COUNT(*) FROM users WHERE role = 'adviser') AS advisers,
          (SELECT COUNT(*) FROM theses) AS theses,
          (SELECT COUNT(*) FROM theses WHERE adviser_id IS NULL) AS unassigned,
-         (SELECT COUNT(*) FROM submissions WHERE status = 'pending') AS pending_reviews,
+         (SELECT COUNT(*) FROM submission_details WHERE status = 'pending') AS pending_reviews,
          (SELECT COUNT(*) FROM theses WHERE status = 'completed') AS completed`,
     )
     .get();

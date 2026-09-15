@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Trash2 } from 'lucide-react';
+import { useToast } from '../../context/ToastContext.jsx';
 import useApi from '../../hooks/useApi.js';
 import { api } from '../../services/api.js';
 import { THESIS_STATUS } from '../../utils/constants.js';
@@ -9,6 +10,7 @@ import { ConfirmDialog } from '../ui/Modal.jsx';
 
 export default function AdminControls({ thesis, onChanged }) {
   const navigate = useNavigate();
+  const toast = useToast();
   const { data: advisers } = useApi(() => api.listAdvisers(), []);
   const [adviserId, setAdviserId] = useState(thesis.adviser_id ?? '');
   const [status, setStatus] = useState(thesis.status);
@@ -21,12 +23,13 @@ export default function AdminControls({ thesis, onChanged }) {
     setStatus(thesis.status);
   }, [thesis.adviser_id, thesis.status]);
 
-  async function run(key, action) {
+  async function run(key, action, successMessage) {
     setBusy(key);
     setError('');
     try {
       await action();
       await onChanged();
+      toast.success(successMessage);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -59,7 +62,9 @@ export default function AdminControls({ thesis, onChanged }) {
               type="button"
               className="btn btn-primary"
               disabled={!adviserChanged || Boolean(busy)}
-              onClick={() => run('adviser', () => api.assignAdviser(thesis.id, adviserId ? Number(adviserId) : null))}
+              onClick={() =>
+                run('adviser', () => api.assignAdviser(thesis.id, adviserId ? Number(adviserId) : null), 'Adviser assignment saved')
+              }
             >
               {busy === 'adviser' ? 'Saving…' : 'Save'}
             </button>
@@ -80,7 +85,7 @@ export default function AdminControls({ thesis, onChanged }) {
               type="button"
               className="btn btn-secondary"
               disabled={!statusChanged || Boolean(busy)}
-              onClick={() => run('status', () => api.updateThesisStatus(thesis.id, status))}
+              onClick={() => run('status', () => api.updateThesisStatus(thesis.id, status), 'Thesis status updated')}
             >
               {busy === 'status' ? 'Saving…' : 'Update'}
             </button>
@@ -109,6 +114,7 @@ export default function AdminControls({ thesis, onChanged }) {
           setError('');
           try {
             await api.deleteThesis(thesis.id);
+            toast.success('Thesis deleted');
             navigate('/theses', { replace: true });
           } catch (err) {
             setError(err.message);

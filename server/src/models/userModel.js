@@ -43,7 +43,7 @@ export function listAdvisers() {
     .prepare(
       `SELECT ${PUBLIC_COLUMNS},
          (SELECT COUNT(*) FROM theses t WHERE t.adviser_id = u.id) AS advisee_count,
-         (SELECT COUNT(*) FROM submissions s JOIN theses t ON t.id = s.thesis_id
+         (SELECT COUNT(*) FROM submission_details s JOIN theses t ON t.id = s.thesis_id
             WHERE t.adviser_id = u.id AND s.status = 'pending') AS pending_count
        FROM users u
        WHERE u.role = 'adviser' AND u.is_active = 1

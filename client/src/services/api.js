@@ -2,17 +2,20 @@
 const BASE_URL = '/api';
 const TOKEN_KEY = 'tms_token';
 
+// "Keep me signed in" saves the token in localStorage; otherwise sessionStorage,
+// which the browser clears when it closes
 export const tokenStore = {
   get() {
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY);
     } catch {
       return null;
     }
   },
-  set(token) {
+  set(token, { remember = true } = {}) {
     try {
-      localStorage.setItem(TOKEN_KEY, token);
+      (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, token);
+      (remember ? sessionStorage : localStorage).removeItem(TOKEN_KEY);
     } catch {
       // Storage unavailable (private mode); the session lasts until reload
     }
@@ -20,6 +23,7 @@ export const tokenStore = {
   clear() {
     try {
       localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
     } catch {
       // ignore
     }
@@ -64,9 +68,14 @@ function toQuery(params = {}) {
 
 export const api = {
   // Auth
-  login: (email, password) => request('/auth/login', { method: 'POST', body: { email, password } }),
+  login: (email, password, remember) =>
+    request('/auth/login', { method: 'POST', body: { email, password, remember } }),
   register: (data) => request('/auth/register', { method: 'POST', body: data }),
+  forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: { email } }),
+  resetPassword: (token, password) =>
+    request('/auth/reset-password', { method: 'POST', body: { token, password } }),
   me: () => request('/auth/me'),
+  demoAccounts: () => request('/auth/demo-accounts'),
   updateMe: (data) => request('/auth/me', { method: 'PATCH', body: data }),
 
   dashboard: () => request('/dashboard'),
@@ -97,6 +106,12 @@ export const api = {
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   },
+
+  // Schedules
+  listSchedules: (params) => request(`/schedules${toQuery(params)}`),
+  createSchedule: (data) => request('/schedules', { method: 'POST', body: data }),
+  updateSchedule: (id, data) => request(`/schedules/${id}`, { method: 'PATCH', body: data }),
+  deleteSchedule: (id) => request(`/schedules/${id}`, { method: 'DELETE' }),
 
   // Users (admin)
   listUsers: (params) => request(`/users${toQuery(params)}`),

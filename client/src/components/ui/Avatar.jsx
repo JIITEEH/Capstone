@@ -1,6 +1,6 @@
 import { initials } from '../../utils/format.js';
 
-const COLORS = ['#4f46e5', '#0e7490', '#b45309', '#be185d', '#15803d', '#7c3aed', '#1d4ed8', '#c2410c'];
+const COLORS = ['#2451d6', '#0f2a7a', '#3b6ff0', '#1a3a9c', '#4f63d8', '#1e4fb8', '#2c3e8f', '#5578e8'];
 
 function colorFor(name = '') {
   let hash = 0;

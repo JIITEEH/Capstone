@@ -1,10 +1,11 @@
 import { STAGES, THESIS_STATUSES } from '../constants.js';
 import { transaction } from '../db/index.js';
 import * as Activity from '../models/activityModel.js';
+import * as Schedule from '../models/scheduleModel.js';
 import * as Submission from '../models/submissionModel.js';
 import * as Thesis from '../models/thesisModel.js';
 import * as User from '../models/userModel.js';
-import { getAccessibleThesis } from '../services/access.js';
+import { getAccessibleThesis, withSchedulePermissions } from '../services/access.js';
 import { deleteStoredFiles } from '../utils/files.js';
 import { HttpError } from '../utils/httpError.js';
 import { oneOf, optionalText, queryString, requireText } from '../utils/validate.js';
@@ -49,14 +50,16 @@ export function getThesis(req, res) {
   res.json({
     thesis,
     submissions: Submission.listByThesis(thesis.id),
+    schedules: Schedule.list({ thesisId: thesis.id, range: 'upcoming' }).map((event) =>
+      withSchedulePermissions(req.user, event),
+    ),
     activity: Activity.listRecent({ thesisId: thesis.id, limit: 15 }),
   });
 }
 
 export function updateThesis(req, res) {
   const thesis = getAccessibleThesis(req.user, req.params.id);
-  if (req.user.role === 'adviser') throw new HttpError(403, 'Only the student or an admin can edit thesis details');
-  if (req.user.role === 'student' && thesis.status === 'completed') {
+  if (thesis.status === 'completed') {
     throw new HttpError(400, 'Completed theses can no longer be edited');
   }
 

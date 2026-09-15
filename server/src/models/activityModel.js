@@ -4,7 +4,7 @@ export function log(thesisId, actorId, action) {
   db.prepare('INSERT INTO activity (thesis_id, actor_id, action) VALUES (?, ?, ?)').run(thesisId, actorId, action);
 }
 
-export function listRecent({ thesisId, adviserId, limit = 10 } = {}) {
+function scope({ thesisId, adviserId }) {
   const where = [];
   const params = [];
   if (thesisId) {
@@ -15,6 +15,28 @@ export function listRecent({ thesisId, adviserId, limit = 10 } = {}) {
     where.push('t.adviser_id = ?');
     params.push(adviserId);
   }
+  return { where, params };
+}
+
+// Timestamps of recent activity, bucketed by day on the dashboard chart
+export function listSince({ thesisId, adviserId, days = 8 } = {}) {
+  const { where, params } = scope({ thesisId, adviserId });
+  where.push("a.created_at >= datetime('now', ?)");
+  params.push(`-${days} days`);
+  return db
+    .prepare(
+      `SELECT a.created_at
+       FROM activity a
+       JOIN theses t ON t.id = a.thesis_id
+       WHERE ${where.join(' AND ')}
+       ORDER BY a.created_at`,
+    )
+    .all(...params)
+    .map((row) => row.created_at);
+}
+
+export function listRecent({ thesisId, adviserId, limit = 10 } = {}) {
+  const { where, params } = scope({ thesisId, adviserId });
   return db
     .prepare(
       `SELECT a.id, a.action, a.created_at, a.thesis_id,

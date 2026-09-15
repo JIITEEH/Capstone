@@ -18,7 +18,8 @@ const router = Router();
 router.get('/', listTheses);
 router.post('/', requireRole('student'), createThesis);
 router.get('/:id', getThesis);
-router.patch('/:id', requireRole('student', 'admin'), updateThesis);
+// Thesis content belongs to the student; admins manage assignment, status, and deletion
+router.patch('/:id', requireRole('student'), updateThesis);
 router.delete('/:id', requireRole('admin'), deleteThesis);
 router.patch('/:id/adviser', requireRole('admin'), assignAdviser);
 router.patch('/:id/status', requireRole('admin'), updateStatus);

@@ -1,8 +1,8 @@
 # ThesisTrack: Thesis Management System
 
-A full stack web app for managing student theses from proposal to final manuscript. It has three roles, each with its own dashboard and permissions.
+A full stack web app for managing student theses from proposal to final defense. It has three roles, Student, Adviser, and Admin, and each role only sees and uses the features that belong to it.
 
-**Stack:** React (Vite) · Express · SQLite (Node's built-in `node:sqlite`) · JWT auth · file uploads with multer
+**Stack:** React (Vite) · Express · SQLite relational database (Node's built-in `node:sqlite`) · JWT auth · file uploads with multer
 
 ## Getting started
 
@@ -17,48 +17,143 @@ npm run dev                            # run the API and the website together
 
 Open http://localhost:5173. The API runs at http://localhost:3001/api.
 
+> If you pulled a change to the database schema, the server stops with "The database schema is out of date". Run `npm run db:seed` to rebuild it.
+
 ### Demo accounts
 
 Every seeded account uses the password **`password123`**. In development, the login page has buttons that fill these in.
 
-| Role    | Email                  | What you'll see                                               |
-| ------- | ---------------------- | ------------------------------------------------------------- |
-| Admin   | `admin@tms.edu`        | System stats, one thesis without an adviser, user management   |
-| Adviser | `maria.santos@tms.edu` | Two advisees, one submission waiting for review               |
-| Adviser | `jose.reyes@tms.edu`   | One completed thesis                                          |
-| Student | `ana.cruz@tms.edu`     | Two stages approved, Chapters 4–5 under review                |
-| Student | `ben.lim@tms.edu`      | Proposal returned with revisions requested                    |
-| Student | `david.tan@tms.edu`    | Proposal submitted, no adviser assigned yet                   |
-| Student | `ella.garcia@tms.edu`  | New student with no thesis yet                                |
+| Role    | Email                  | What you'll see                                                        |
+| ------- | ---------------------- | ---------------------------------------------------------------------- |
+| Admin   | `admin@tms.edu`        | System stats, all theses and events, user management                   |
+| Adviser | `maria.santos@tms.edu` | One advisee, one submission to review, upcoming consultation and defense |
+| Student | `ana.cruz@tms.edu`     | Two stages approved, Chapters 4–5 under review, final defense scheduled |
 
-Run `npm run db:seed` any time to reset the database and delete uploaded files.
+Run `npm run db:seed` any time to reset the database and uploaded files.
 
 ## Roles and permissions
 
-All permissions are enforced by the API, not only hidden in the UI.
+Every rule below is enforced by the API. The UI also hides what a role can't use, and each role's pages are only downloaded by that role.
 
-| Action                                          | Student          | Adviser             | Admin |
-| ----------------------------------------------- | ---------------- | ------------------- | ----- |
-| Register publicly                               | ✅               | Created by admin    | Created by admin |
-| Create a thesis (one per student)               | ✅               | —                   | —     |
-| View theses                                     | Own only         | Assigned only       | All   |
-| Edit thesis title, abstract, keywords           | Own, until completed | —               | ✅    |
-| Upload a submission (PDF/DOC/DOCX, 20 MB)       | Own thesis       | —                   | —     |
-| Download submission files                       | Own              | Assigned            | All   |
-| Approve or request revisions                    | —                | Assigned            | ✅    |
-| Comment on submissions                          | Own              | Assigned            | ✅    |
-| Assign advisers, override status, delete thesis | —                | —                   | ✅    |
-| Create, edit, deactivate, and delete users      | —                | —                   | ✅    |
+| Feature                                   | Student                    | Adviser                          | Admin                        |
+| ----------------------------------------- | -------------------------- | -------------------------------- | ---------------------------- |
+| Dashboard                                 | Own progress and feedback  | Review queue and advisees        | System overview              |
+| Create a thesis (one per student)         | ✅                         | —                                | —                            |
+| View theses                               | Own only                   | Assigned advisees only           | All                          |
+| Edit thesis title, abstract, keywords     | Own, until completed       | —                                | —                            |
+| Upload submissions (PDF/DOC/DOCX, 20 MB)  | Own thesis                 | —                                | —                            |
+| Download submission files                 | Own                        | Advisees                         | All                          |
+| Review (approve / request revisions)      | —                          | Advisees                         | — (read-only)                |
+| Comment on submissions                    | Own                        | Advisees                         | — (read-only)                |
+| View schedule                             | Own events                 | Advisees' events + panels they sit on | All                     |
+| Schedule consultations                    | —                          | Advisees                         | ✅                           |
+| Schedule defenses and assign panelists    | —                          | —                                | ✅                           |
+| Edit, complete, or cancel events          | —                          | Own advisees' consultations      | ✅                           |
+| Delete events                             | —                          | —                                | ✅                           |
+| Assign advisers, override status, delete theses | —                    | —                                | ✅                           |
+| Manage users                              | —                          | —                                | ✅                           |
+
+Users who try to open something outside their role get a 403 (wrong role) or 404 (a record they aren't allowed to see).
 
 ### Thesis workflow
 
 A thesis moves through four stages: **Proposal → Chapters 1–3 → Chapters 4–5 → Final Manuscript**.
 
 1. The student uploads a manuscript for a stage. The thesis becomes **Under review**. Only one submission can be pending at a time.
-2. The adviser either **approves** it or **requests revisions**. Requesting revisions requires written feedback.
-3. After revisions are requested, the thesis shows **Needs revisions** and the student uploads a new version of that stage.
+2. The assigned adviser adds a **review**: approve, or request revisions with written feedback.
+3. After revisions are requested, the thesis shows **Needs revisions** and the student uploads a new version.
 4. After an approval, the thesis is **In progress** and the student moves on to the next stage.
 5. Once the Final Manuscript is approved, the thesis is **Completed**.
+
+Along the way, advisers schedule **consultations** and admins schedule the **proposal defense** and **final defense** with a panel of advisers. The API rejects events that overlap for the same thesis, adviser, or panelist.
+
+## Database
+
+The app uses a relational SQLite database. The schema lives in [`server/src/db/schema.sql`](server/src/db/schema.sql).
+
+```mermaid
+erDiagram
+    users ||--o| theses : "writes (student)"
+    users ||--o{ theses : "advises"
+    theses ||--o{ submissions : "has"
+    submissions ||--o| reviews : "receives"
+    users ||--o{ reviews : "writes (adviser)"
+    submissions ||--o{ comments : "has"
+    users ||--o{ comments : "writes"
+    theses ||--o{ schedules : "has"
+    schedules ||--o{ schedule_panelists : "has"
+    users ||--o{ schedule_panelists : "sits on"
+    theses ||--o{ activity : "logs"
+    users ||--o{ password_resets : "requests"
+
+    users {
+        int id PK
+        text name
+        text email UK
+        text role "student | adviser | admin"
+        text program
+        int is_active
+    }
+    theses {
+        int id PK
+        int student_id FK,UK
+        int adviser_id FK
+        text title
+        text status
+    }
+    submissions {
+        int id PK
+        int thesis_id FK
+        text stage
+        text file_name
+        text submitted_at
+    }
+    reviews {
+        int id PK
+        int submission_id FK,UK
+        int reviewer_id FK
+        text decision "approved | revisions_requested"
+        text feedback
+    }
+    comments {
+        int id PK
+        int submission_id FK
+        int author_id FK
+        text body
+    }
+    schedules {
+        int id PK
+        int thesis_id FK
+        text type "consultation | proposal_defense | final_defense"
+        text starts_at
+        int duration_minutes
+        text mode
+        text status "scheduled | completed | cancelled"
+    }
+    schedule_panelists {
+        int schedule_id PK,FK
+        int adviser_id PK,FK
+    }
+    activity {
+        int id PK
+        int thesis_id FK
+        int actor_id FK
+        text action
+    }
+    password_resets {
+        int id PK
+        int user_id FK
+        text token_hash UK
+        text expires_at
+    }
+```
+
+- **Foreign keys** are enforced (`PRAGMA foreign_keys = ON`). Deleting a thesis cascades to its submissions, reviews, comments, schedules, and activity.
+- **`reviews`** has a unique `submission_id`, so a submission can only be reviewed once.
+- **`schedule_panelists`** is a join table for the many-to-many link between defenses and advisers.
+- **`submission_details`** is a view that joins each submission with its review. A submission's status (`pending`, `approved`, `revisions_requested`) comes from its review, so status is never stored twice.
+- **`password_resets`** holds one-time reset links. Only a SHA-256 hash of each token is stored. A link expires after 1 hour and is deleted once used. No email service is set up yet, so outside production the reset link is printed in the server console and shown on the "Forgot password" page.
+- **Schema versioning:** `SCHEMA_VERSION` in `server/src/db/index.js` must be bumped whenever `schema.sql` changes.
 
 ## Project structure
 
@@ -66,51 +161,57 @@ A thesis moves through four stages: **Proposal → Chapters 1–3 → Chapters 4
 Capstone/
 ├── client/                     # React website (Vite)
 │   └── src/
-│       ├── App.jsx             # routes, with role guards
-│       ├── context/            # AuthContext: login state and token
+│       ├── App.jsx             # routes, role guards, lazy-loaded pages
+│       ├── context/            # AuthContext (session), ToastContext (notifications)
 │       ├── services/api.js     # every API call
-│       ├── hooks/useApi.js     # loading/error state for API calls
+│       ├── hooks/useApi.js     # loading/error state and background refresh
 │       ├── components/
-│       │   ├── layout/         # sidebar and top bar
+│       │   ├── layout/         # sidebar (per-role navigation) and top bar
 │       │   ├── auth/           # route guards
+│       │   ├── schedule/       # event list and event form
 │       │   ├── thesis/         # thesis form, upload form, admin controls
-│       │   └── ui/             # badges, modals, stat cards, stage tracker, etc.
+│       │   └── ui/             # badges, modals, stat cards, progress ring, banner, skeletons
 │       ├── pages/
-│       │   ├── auth/           # login, register
+│       │   ├── auth/           # login, register, forgot and reset password
 │       │   ├── student/        # student dashboard, my thesis
 │       │   ├── adviser/        # adviser dashboard
 │       │   ├── admin/          # admin dashboard, user management
-│       │   └── *.jsx           # shared pages: thesis list/detail, submission, profile
-│       └── styles/index.css    # design tokens and all styles
+│       │   └── *.jsx           # shared: theses, thesis detail, submission, schedule, profile
+│       └── styles/index.css    # design tokens, layout, animations
 └── server/                     # Express API
-    ├── data/                   # SQLite database (git-ignored)
+    ├── data/                   # SQLite database file (git-ignored)
     ├── uploads/                # uploaded manuscripts (git-ignored)
     └── src/
         ├── db/                 # connection, schema.sql, seed.js
         ├── routes/             # URL → controller, with role middleware
         ├── controllers/        # request handling and validation
-        ├── models/             # SQL queries
-        ├── services/access.js  # who can see which thesis
+        ├── models/             # SQL queries, one file per table
+        ├── services/access.js  # who can see and change which records
         ├── middleware/         # auth, uploads, errors
         └── utils/              # passwords, validation, files
 ```
 
 ## API overview
 
-| Method | Endpoint                          | Who                       |
-| ------ | --------------------------------- | ------------------------- |
-| POST   | `/api/auth/register`, `/api/auth/login` | Public               |
-| GET/PATCH | `/api/auth/me`                 | Signed in                 |
-| GET    | `/api/dashboard`                  | Signed in (role-specific) |
-| GET    | `/api/theses`, `/api/theses/:id`  | Signed in (scoped)        |
-| POST   | `/api/theses`                     | Student                   |
-| PATCH  | `/api/theses/:id`                 | Student (own), Admin      |
-| PATCH  | `/api/theses/:id/adviser`, `/status` · DELETE `/api/theses/:id` | Admin |
-| POST   | `/api/theses/:id/submissions`     | Student (own)             |
-| GET    | `/api/submissions/:id`, `/file`   | Anyone with thesis access |
-| POST   | `/api/submissions/:id/comments`   | Anyone with thesis access |
-| PATCH  | `/api/submissions/:id/review`     | Assigned adviser, Admin   |
-| *      | `/api/users`, `/api/users/advisers` | Admin                   |
+| Method       | Endpoint                                   | Who                                  |
+| ------------ | ------------------------------------------ | ------------------------------------ |
+| POST         | `/api/auth/register`, `/api/auth/login`    | Public                               |
+| POST         | `/api/auth/forgot-password`, `/api/auth/reset-password` | Public                  |
+| GET / PATCH  | `/api/auth/me`                             | Signed in                            |
+| GET          | `/api/dashboard`                           | Signed in (different data per role)  |
+| GET          | `/api/theses`, `/api/theses/:id`           | Signed in (scoped by role)           |
+| POST         | `/api/theses`                              | Student                              |
+| PATCH        | `/api/theses/:id`                          | Student (own)                        |
+| PATCH        | `/api/theses/:id/adviser`, `/api/theses/:id/status` | Admin                       |
+| DELETE       | `/api/theses/:id`                          | Admin                                |
+| POST         | `/api/theses/:id/submissions`              | Student (own)                        |
+| GET          | `/api/submissions/:id`, `/api/submissions/:id/file` | Anyone with thesis access   |
+| POST         | `/api/submissions/:id/comments`            | Student (own), assigned adviser      |
+| PATCH        | `/api/submissions/:id/review`              | Assigned adviser                     |
+| GET          | `/api/schedules?range=upcoming\|past`      | Signed in (scoped by role)           |
+| POST / PATCH | `/api/schedules`, `/api/schedules/:id`     | Adviser (consultations), Admin       |
+| DELETE       | `/api/schedules/:id`                       | Admin                                |
+| *            | `/api/users`, `/api/users/advisers`        | Admin                                |
 
 ## Scripts
 

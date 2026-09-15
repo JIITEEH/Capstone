@@ -17,26 +17,3 @@ export function create({ submissionId, authorId, body }) {
     .run(submissionId, authorId, body);
   return db.prepare(`${SELECT_COMMENT} WHERE c.id = ?`).get(result.lastInsertRowid);
 }
-
-// Feedback left by other people on a student's submissions
-const FEEDBACK_FOR_STUDENT = `
-  FROM comments c
-  JOIN submissions sub ON sub.id = c.submission_id
-  JOIN theses t ON t.id = sub.thesis_id
-  LEFT JOIN users u ON u.id = c.author_id
-  WHERE t.student_id = ? AND (c.author_id IS NULL OR c.author_id != t.student_id)`;
-
-export function recentForStudent(studentId, limit = 5) {
-  return db
-    .prepare(
-      `SELECT c.id, c.body, c.created_at, c.submission_id, sub.stage,
-         u.name AS author_name, u.role AS author_role
-       ${FEEDBACK_FOR_STUDENT}
-       ORDER BY c.created_at DESC, c.id DESC LIMIT ?`,
-    )
-    .all(studentId, limit);
-}
-
-export function countForStudent(studentId) {
-  return db.prepare(`SELECT COUNT(*) AS count ${FEEDBACK_FOR_STUDENT}`).get(studentId).count;
-}

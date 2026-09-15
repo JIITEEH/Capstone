@@ -1,3 +1,6 @@
+-- Relational schema for the Thesis Management System.
+-- Bump SCHEMA_VERSION in db/index.js whenever this file changes.
+
 CREATE TABLE IF NOT EXISTS users (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   name          TEXT    NOT NULL,
@@ -23,7 +26,7 @@ CREATE TABLE IF NOT EXISTS theses (
   updated_at TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
--- A manuscript uploaded for one stage of the thesis
+-- A manuscript uploaded for one stage of the thesis. Its status comes from its review.
 CREATE TABLE IF NOT EXISTS submissions (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   thesis_id    INTEGER NOT NULL REFERENCES theses(id) ON DELETE CASCADE,
@@ -33,19 +36,50 @@ CREATE TABLE IF NOT EXISTS submissions (
   stored_name  TEXT,
   file_size    INTEGER,
   mime_type    TEXT,
-  status       TEXT    NOT NULL DEFAULT 'pending'
-               CHECK (status IN ('pending', 'approved', 'revisions_requested')),
-  submitted_at TEXT    NOT NULL DEFAULT (datetime('now')),
-  reviewed_at  TEXT,
-  reviewed_by  INTEGER REFERENCES users(id) ON DELETE SET NULL
+  submitted_at TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
+-- The adviser's decision on a submission (at most one per submission)
+CREATE TABLE IF NOT EXISTS reviews (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  submission_id INTEGER NOT NULL UNIQUE REFERENCES submissions(id) ON DELETE CASCADE,
+  reviewer_id   INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  decision      TEXT    NOT NULL CHECK (decision IN ('approved', 'revisions_requested')),
+  feedback      TEXT    NOT NULL DEFAULT '',
+  created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Discussion between the student and adviser on a submission
 CREATE TABLE IF NOT EXISTS comments (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   submission_id INTEGER NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
   author_id     INTEGER REFERENCES users(id) ON DELETE SET NULL,
   body          TEXT    NOT NULL,
   created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Consultations and defenses for a thesis
+CREATE TABLE IF NOT EXISTS schedules (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  thesis_id        INTEGER NOT NULL REFERENCES theses(id) ON DELETE CASCADE,
+  type             TEXT    NOT NULL CHECK (type IN ('consultation', 'proposal_defense', 'final_defense')),
+  title            TEXT    NOT NULL,
+  starts_at        TEXT    NOT NULL,  -- UTC, 'YYYY-MM-DD HH:MM:SS'
+  duration_minutes INTEGER NOT NULL CHECK (duration_minutes BETWEEN 15 AND 480),
+  mode             TEXT    NOT NULL CHECK (mode IN ('in_person', 'online')),
+  location         TEXT    NOT NULL DEFAULT '',  -- room or meeting link
+  notes            TEXT    NOT NULL DEFAULT '',
+  status           TEXT    NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'completed', 'cancelled')),
+  created_by       INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
+  updated_at       TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Advisers sitting on a defense panel (many-to-many between schedules and users)
+CREATE TABLE IF NOT EXISTS schedule_panelists (
+  schedule_id INTEGER NOT NULL REFERENCES schedules(id) ON DELETE CASCADE,
+  adviser_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  PRIMARY KEY (schedule_id, adviser_id)
 );
 
 CREATE TABLE IF NOT EXISTS activity (
@@ -56,7 +90,30 @@ CREATE TABLE IF NOT EXISTS activity (
   created_at TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_theses_adviser      ON theses(adviser_id);
-CREATE INDEX IF NOT EXISTS idx_submissions_thesis  ON submissions(thesis_id);
-CREATE INDEX IF NOT EXISTS idx_comments_submission ON comments(submission_id);
-CREATE INDEX IF NOT EXISTS idx_activity_thesis     ON activity(thesis_id);
+-- One-time password reset links. Only a SHA-256 hash of the token is stored.
+CREATE TABLE IF NOT EXISTS password_resets (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT    NOT NULL UNIQUE,
+  expires_at TEXT    NOT NULL,  -- UTC, 'YYYY-MM-DD HH:MM:SS'
+  created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Submissions joined with their review; status is 'pending' until a review exists
+CREATE VIEW IF NOT EXISTS submission_details AS
+  SELECT s.*,
+    COALESCE(r.decision, 'pending') AS status,
+    r.reviewer_id,
+    r.feedback   AS review_feedback,
+    r.created_at AS reviewed_at
+  FROM submissions s
+  LEFT JOIN reviews r ON r.submission_id = s.id;
+
+CREATE INDEX IF NOT EXISTS idx_theses_adviser       ON theses(adviser_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_thesis   ON submissions(thesis_id);
+CREATE INDEX IF NOT EXISTS idx_comments_submission  ON comments(submission_id);
+CREATE INDEX IF NOT EXISTS idx_schedules_thesis     ON schedules(thesis_id);
+CREATE INDEX IF NOT EXISTS idx_schedules_starts_at  ON schedules(starts_at);
+CREATE INDEX IF NOT EXISTS idx_panelists_adviser    ON schedule_panelists(adviser_id);
+CREATE INDEX IF NOT EXISTS idx_activity_thesis      ON activity(thesis_id);
+CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets(user_id);

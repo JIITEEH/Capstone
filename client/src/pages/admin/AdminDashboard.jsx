@@ -1,142 +1,127 @@
 import { Link } from 'react-router';
-import { ArrowRight, CircleCheck, Clock, GraduationCap, Library, UserRoundX, Users } from 'lucide-react';
-import ActivityFeed from '../../components/ui/ActivityFeed.jsx';
-import Avatar from '../../components/ui/Avatar.jsx';
-import { EmptyState, LoadState } from '../../components/ui/Feedback.jsx';
-import PageHeader from '../../components/ui/PageHeader.jsx';
+import { BookOpen, CircleCheck, FileText, GraduationCap, Plus, ScrollText, Users } from 'lucide-react';
+import DashboardHeader from '../../components/dashboard/DashboardHeader.jsx';
+import PeopleCard from '../../components/dashboard/PeopleCard.jsx';
+import ProgressGauge, { groupStatuses } from '../../components/dashboard/ProgressGauge.jsx';
+import TaskListCard from '../../components/dashboard/TaskListCard.jsx';
+import TimeTracker from '../../components/dashboard/TimeTracker.jsx';
+import WeeklyActivity from '../../components/dashboard/WeeklyActivity.jsx';
+import { LoadState } from '../../components/ui/Feedback.jsx';
 import StatCard from '../../components/ui/StatCard.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import useApi from '../../hooks/useApi.js';
 import { api } from '../../services/api.js';
-import { THESIS_STATUS } from '../../utils/constants.js';
-import { timeAgo } from '../../utils/format.js';
+import { formatDate, greeting, plural } from '../../utils/format.js';
+
+const THESIS_GLYPHS = [
+  { icon: ScrollText, tone: 'blue' },
+  { icon: BookOpen, tone: 'teal' },
+  { icon: FileText, tone: 'amber' },
+  { icon: GraduationCap, tone: 'violet' },
+  { icon: BookOpen, tone: 'rose' },
+];
+
+function summary(stats) {
+  const parts = [];
+  if (stats.unassigned) parts.push(stats.unassigned === 1 ? '1 thesis needs an adviser' : `${stats.unassigned} theses need an adviser`);
+  if (stats.pending_reviews) parts.push(`${plural(stats.pending_reviews, 'submission')} awaiting review`);
+  return parts.length ? `${parts.join(' and ')}.` : 'Everything is running smoothly.';
+}
 
 export default function AdminDashboard() {
-  const { data, loading, error } = useApi(() => api.dashboard(), []);
+  const { user } = useAuth();
+  const { data, loading, error, reload } = useApi(() => api.dashboard(), [], { refreshInterval: 30000 });
 
-  if (!data) return <LoadState loading={loading} error={error} />;
-  const { stats, statusBreakdown, advisers, unassigned, activity } = data;
+  if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
+  const { stats, statusBreakdown, advisers, unassigned, weeklyActivity } = data;
 
-  const counts = Object.fromEntries(statusBreakdown.map((row) => [row.status, row.count]));
-  const maxLoad = Math.max(1, ...advisers.map((adviser) => adviser.advisee_count));
+  const segments = groupStatuses(Object.fromEntries(statusBreakdown.map((row) => [row.status, row.count])));
 
   return (
-    <>
-      <PageHeader
-        title="Administration"
-        subtitle="An overview of every thesis, adviser, and student in the system."
-        actions={
-          <Link to="/users" className="btn btn-primary">
-            <Users size={16} />
-            Manage users
-          </Link>
-        }
-      />
+    <div className="dashboard">
+      <DashboardHeader subtitle={`${greeting()}, Admin. ${summary(stats)}`}>
+        <Link to="/users" className="btn btn-primary btn-lg">
+          <Plus size={20} />
+          Add User
+        </Link>
+        <Link to="/schedule" className="btn btn-outline btn-lg">
+          Schedule Defense
+        </Link>
+      </DashboardHeader>
 
-      <div className="stack">
-        <div className="stat-grid stat-grid-6">
-          <StatCard icon={GraduationCap} tone="info" label="Students" value={stats.students} />
-          <StatCard icon={Users} tone="primary" label="Advisers" value={stats.advisers} />
-          <StatCard icon={Library} tone="neutral" label="Theses" value={stats.theses} />
-          <StatCard icon={UserRoundX} tone="danger" label="Without adviser" value={stats.unassigned} />
-          <StatCard icon={Clock} tone="warning" label="Pending reviews" value={stats.pending_reviews} />
-          <StatCard icon={CircleCheck} tone="success" label="Completed" value={stats.completed} />
-        </div>
+      <div className="kpi-grid stagger">
+        <StatCard featured label="Total Theses" value={stats.theses} to="/theses" chip={stats.completed} note="Completed" />
+        <StatCard label="Students" value={stats.students} to="/users" chip={stats.advisers} note="Advisers on staff" />
+        <StatCard
+          label="Pending Reviews"
+          value={stats.pending_reviews}
+          to="/theses?status=under_review"
+          note="Across all advisers"
+        />
+        <StatCard
+          label="Without Adviser"
+          value={stats.unassigned}
+          to="/theses?adviser=unassigned"
+          note={stats.unassigned ? 'Needs assignment' : 'Every thesis is assigned'}
+        />
+      </div>
 
-        <div className="grid-2">
-          <section className="card">
-            <div className="card-header">
-              <h3>Theses by status</h3>
-              <Link to="/theses" className="card-link">
-                View all <ArrowRight size={14} />
-              </Link>
-            </div>
-            <ul className="bar-list">
-              {Object.entries(THESIS_STATUS).map(([key, info]) => {
-                const count = counts[key] ?? 0;
-                return (
-                  <li key={key}>
-                    <Link to={`/theses?status=${key}`} className="bar-row">
-                      <span className="bar-label">{info.label}</span>
-                      <span className="bar-track">
-                        <span
-                          className={`bar-fill tone-${info.tone}`}
-                          style={{ width: `${stats.theses ? (count / stats.theses) * 100 : 0}%` }}
-                        />
-                      </span>
-                      <span className="bar-value">{count}</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-
-          <section className="card">
-            <div className="card-header">
-              <h3>Adviser workload</h3>
-            </div>
-            {advisers.length ? (
-              <ul className="bar-list">
-                {advisers.map((adviser) => (
-                  <li key={adviser.id} className="bar-row">
-                    <span className="bar-label bar-label-person">
-                      <Avatar name={adviser.name} size="sm" />
-                      <span className="clamp-1">{adviser.name}</span>
-                    </span>
-                    <span className="bar-track">
-                      <span className="bar-fill tone-primary" style={{ width: `${(adviser.advisee_count / maxLoad) * 100}%` }} />
-                    </span>
-                    <span className="bar-value" title={`${adviser.pending_count} pending reviews`}>
-                      {adviser.advisee_count}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <EmptyState compact icon={Users} title="No advisers yet" />
-            )}
-          </section>
-        </div>
-
-        <div className="grid-2">
-          <section className="card">
-            <div className="card-header">
-              <h3>Needs an adviser</h3>
-              {stats.unassigned > 0 && (
-                <Link to="/theses?adviser=unassigned" className="card-link">
-                  View all <ArrowRight size={14} />
+      <div className="dash-grid">
+        <div className="dash-main">
+          <div className="dash-row dash-row-top stagger">
+            <WeeklyActivity timestamps={weeklyActivity} title="System Activity" />          </div>
+          <div className="dash-row dash-row-bottom stagger">
+            <PeopleCard
+              title="Adviser Workload"
+              action={
+                <Link to="/users" className="pill-btn">
+                  <Plus size={16} />
+                  Add User
                 </Link>
-              )}
-            </div>
-            {unassigned.length ? (
-              <ul className="row-list">
-                {unassigned.map((thesis) => (
-                  <li key={thesis.id} className="row-item">
-                    <Avatar name={thesis.student_name} />
-                    <div className="row-main">
-                      <strong>{thesis.student_name}</strong>
-                      <span className="muted clamp-1">{thesis.title}</span>
-                    </div>
-                    <span className="row-meta">{timeAgo(thesis.created_at)}</span>
-                    <Link to={`/theses/${thesis.id}`} className="btn btn-secondary btn-sm">
-                      Assign
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <EmptyState compact icon={CircleCheck} title="Every thesis has an adviser" />
-            )}
-          </section>
+              }
+              people={advisers.slice(0, 4).map((adviser) => ({
+                key: adviser.id,
+                name: adviser.name,
+                lead: 'Advising',
+                detail: `${adviser.advisee_count} ${adviser.advisee_count === 1 ? 'thesis' : 'theses'}`,
+                status: adviser.pending_count
+                  ? { label: `${adviser.pending_count} pending`, tone: 'active' }
+                  : { label: 'Up to date', tone: 'done' },
+                to: `/theses?adviser=${adviser.id}`,
+              }))}
+              emptyIcon={Users}
+              emptyTitle="No advisers yet"
+            />
+            <ProgressGauge
+              title="Thesis Progress"
+              {...segments}
+              caption="Theses Completed"
+              labels={['Completed', 'In Progress', 'Draft']}
+            />
+          </div>
+        </div>
 
-          <section className="card">
-            <div className="card-header">
-              <h3>Recent activity</h3>
-            </div>
-            <ActivityFeed items={activity} showThesis />
-          </section>
+        <div className="dash-side stagger">
+          <TaskListCard
+            title="Unassigned"
+            action={
+              <Link to="/theses?adviser=unassigned" className="pill-btn">
+                View All
+              </Link>
+            }
+            items={unassigned.map((thesis, index) => ({
+              key: thesis.id,
+              ...THESIS_GLYPHS[index % THESIS_GLYPHS.length],
+              title: thesis.title,
+              meta: `${thesis.student_name} · ${formatDate(thesis.created_at)}`,
+              to: `/theses/${thesis.id}`,
+            }))}
+            emptyIcon={CircleCheck}
+            emptyTitle="Every thesis has an adviser"
+          />
+          <TimeTracker userId={user.id} />
         </div>
       </div>
-    </>
+    </div>
   );
 }

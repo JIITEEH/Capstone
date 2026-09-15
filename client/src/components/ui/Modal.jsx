@@ -40,14 +40,24 @@ export default function Modal({ open, title, description, onClose, children, siz
   );
 }
 
-export function ConfirmDialog({ open, title, message, confirmLabel = 'Confirm', busy, error, onConfirm, onClose }) {
+export function ConfirmDialog({
+  open,
+  title,
+  message,
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  busy,
+  error,
+  onConfirm,
+  onClose,
+}) {
   return (
     <Modal open={open} title={title} onClose={onClose} size="sm">
       <p className="muted">{message}</p>
       {error && <p className="form-error">{error}</p>}
       <div className="modal-footer">
         <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>
-          Cancel
+          {cancelLabel}
         </button>
         <button type="button" className="btn btn-danger" onClick={onConfirm} disabled={busy}>
           {busy ? 'Working…' : confirmLabel}

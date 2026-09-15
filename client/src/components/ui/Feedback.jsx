@@ -28,6 +28,22 @@ export function PageLoader({ fullscreen = false }) {
   );
 }
 
+// Shimmering placeholder shaped like a typical page while data loads
+export function SkeletonPage() {
+  return (
+    <div className="skeleton-page" aria-busy="true" aria-label="Loading">
+      <div className="skeleton skeleton-title" />
+      <div className="skeleton skeleton-text" />
+      <div className="skeleton-grid">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="skeleton skeleton-card" />
+        ))}
+      </div>
+      <div className="skeleton skeleton-block" />
+    </div>
+  );
+}
+
 export function EmptyState({ icon: Icon, title, message, action, compact = false }) {
   return (
     <div className={`empty-state${compact ? ' compact' : ''}`}>
@@ -43,9 +59,24 @@ export function EmptyState({ icon: Icon, title, message, action, compact = false
   );
 }
 
-// Shows a spinner on first load, an error if loading failed, otherwise nothing
-export function LoadState({ loading, error }) {
-  if (error) return <Alert title="Something went wrong">{error}</Alert>;
-  if (loading) return <PageLoader />;
+// Shows a skeleton on first load, an error if loading failed, otherwise nothing
+export function LoadState({ loading, error, onRetry }) {
+  if (error) {
+    return (
+      <Alert
+        title="Something went wrong"
+        action={
+          onRetry && (
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => onRetry()}>
+              Try again
+            </button>
+          )
+        }
+      >
+        {error}
+      </Alert>
+    );
+  }
+  if (loading) return <SkeletonPage />;
   return null;
 }

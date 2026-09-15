@@ -38,6 +38,26 @@ export function oneOf(value, allowed, label) {
   return value;
 }
 
+// Accepts an ISO 8601 string with a timezone and returns SQLite's UTC format
+export function requireDateTime(value, label) {
+  if (typeof value !== 'string' || !value) throw new HttpError(400, `${label} is required`);
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) throw new HttpError(400, `${label} is not a valid date`);
+  return toSqlDateTime(date);
+}
+
+export function toSqlDateTime(date) {
+  return date.toISOString().slice(0, 19).replace('T', ' ');
+}
+
+export function requireInt(value, label, { min, max }) {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < min || number > max) {
+    throw new HttpError(400, `${label} must be between ${min} and ${max}`);
+  }
+  return number;
+}
+
 export function parseId(value, notFoundMessage = 'Not found') {
   const id = Number(value);
   if (!Number.isInteger(id) || id < 1) throw new HttpError(404, notFoundMessage);

@@ -19,8 +19,13 @@ export default function ThesesList() {
   const status = params.get('status') ?? '';
   const adviser = params.get('adviser') ?? '';
 
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
+  // The topbar search arrives as ?q=
+  const query = params.get('q') ?? '';
+  const [searchInput, setSearchInput] = useState(query);
+  const [search, setSearch] = useState(query.trim());
+  useEffect(() => {
+    setSearchInput(query);
+  }, [query]);
   useEffect(() => {
     const timer = setTimeout(() => setSearch(searchInput.trim()), 300);
     return () => clearTimeout(timer);

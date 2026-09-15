@@ -1,17 +1,29 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
-import { Check, ChevronLeft, Download, FileText, MessageSquare, RotateCcw, Send } from 'lucide-react';
+import {
+  Check,
+  ChevronLeft,
+  CircleCheck,
+  Clock,
+  Download,
+  FileText,
+  Lock,
+  MessageSquare,
+  RotateCcw,
+  Send,
+} from 'lucide-react';
 import Avatar from '../components/ui/Avatar.jsx';
 import { RoleBadge, SubmissionStatusBadge } from '../components/ui/Badge.jsx';
 import { EmptyState, LoadState } from '../components/ui/Feedback.jsx';
 import PageHeader from '../components/ui/PageHeader.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import useApi from '../hooks/useApi.js';
 import { api } from '../services/api.js';
 import { STAGE_LABELS } from '../utils/constants.js';
 import { formatBytes, formatDateTime, plural, timeAgo } from '../utils/format.js';
 
-function ReviewPanel({ submissionId, onReviewed }) {
+function ReviewPanel({ submissionId, studentName, onReviewed }) {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -23,8 +35,8 @@ function ReviewPanel({ submissionId, onReviewed }) {
     setBusy(decision);
     setError('');
     try {
-      await api.reviewSubmission(submissionId, { decision, comment: note });
-      await onReviewed();
+      await api.reviewSubmission(submissionId, { decision, feedback: note });
+      await onReviewed(decision);
     } catch (err) {
       setError(err.message);
       setBusy('');
@@ -37,6 +49,7 @@ function ReviewPanel({ submissionId, onReviewed }) {
         <h3>Your review</h3>
       </div>
       <div className="form">
+        <p className="muted">Decide whether {studentName} can move on to the next stage.</p>
         <div className="field">
           <label htmlFor="review-note">Feedback for the student</label>
           <textarea
@@ -61,6 +74,31 @@ function ReviewPanel({ submissionId, onReviewed }) {
           </button>
         </div>
       </div>
+    </section>
+  );
+}
+
+function ReviewResult({ submission }) {
+  const approved = submission.status === 'approved';
+  const Icon = approved ? CircleCheck : RotateCcw;
+  return (
+    <section className={`card review-result review-${submission.status}`}>
+      <div className="review-result-head">
+        <span className={`review-result-icon tone-${approved ? 'success' : 'warning'}`}>
+          <Icon size={20} />
+        </span>
+        <div>
+          <strong>{approved ? 'Approved' : 'Revisions requested'}</strong>
+          <span className="muted">
+            {submission.reviewer_name ?? 'Deleted user'} · {formatDateTime(submission.reviewed_at)}
+          </span>
+        </div>
+      </div>
+      {submission.review_feedback ? (
+        <p className="prose">{submission.review_feedback}</p>
+      ) : (
+        <p className="muted">No additional feedback was left.</p>
+      )}
     </section>
   );
 }
@@ -111,21 +149,22 @@ function CommentForm({ submissionId, onPosted }) {
 export default function SubmissionDetail() {
   const { id } = useParams();
   const { user } = useAuth();
+  const toast = useToast();
   const { data, loading, error, reload } = useApi(() => api.getSubmission(id), [id]);
-  const [downloadError, setDownloadError] = useState('');
 
-  if (!data) return <LoadState loading={loading} error={error} />;
+  if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
   const { submission, thesis, comments } = data;
 
-  const canReview = submission.status === 'pending' && (user.role === 'admin' || user.role === 'adviser');
+  const isAdmin = user.role === 'admin';
+  // Only the assigned adviser reviews; the API returns 404 to other advisers before this page loads
+  const canReview = submission.status === 'pending' && user.role === 'adviser';
   const backTo = user.role === 'student' ? '/thesis' : `/theses/${thesis.id}`;
 
   async function download() {
-    setDownloadError('');
     try {
       await api.downloadSubmission(submission.id, submission.file_name);
     } catch (err) {
-      setDownloadError(err.message);
+      toast.error(err.message);
     }
   }
 
@@ -148,7 +187,7 @@ export default function SubmissionDetail() {
       />
 
       <div className="detail-layout">
-        <div className="stack">
+        <div className="stack stagger">
           <section className="card">
             <div className="file-card">
               <div className="file-icon file-icon-lg">
@@ -168,7 +207,6 @@ export default function SubmissionDetail() {
                 </button>
               ) : null}
             </div>
-            {downloadError && <p className="form-error">{downloadError}</p>}
             {submission.notes && (
               <div className="notes">
                 <span className="person-label">Notes from the student</span>
@@ -177,13 +215,15 @@ export default function SubmissionDetail() {
             )}
           </section>
 
+          {submission.status !== 'pending' && <ReviewResult submission={submission} />}
+
           <section className="card">
             <div className="card-header">
               <h3>Discussion</h3>
               <span className="muted">{plural(comments.length, 'comment')}</span>
             </div>
             {comments.length ? (
-              <ul className="comment-list">
+              <ul className="comment-list stagger">
                 {comments.map((comment) => (
                   <li key={comment.id} className={`comment${comment.author_id === user.id ? ' comment-own' : ''}`}>
                     <Avatar name={comment.author_name ?? 'Deleted user'} size="sm" />
@@ -203,12 +243,50 @@ export default function SubmissionDetail() {
             ) : (
               <EmptyState compact icon={MessageSquare} title="No comments yet" />
             )}
-            <CommentForm submissionId={submission.id} onPosted={reload} />
+            {isAdmin ? (
+              <p className="read-only-note muted">
+                <Lock size={14} />
+                Admins can read this discussion. Only the student and adviser can post.
+              </p>
+            ) : (
+              <CommentForm
+                submissionId={submission.id}
+                onPosted={async () => {
+                  toast.success('Comment posted');
+                  await reload();
+                }}
+              />
+            )}
           </section>
         </div>
 
-        <aside className="stack">
-          {canReview && <ReviewPanel submissionId={submission.id} onReviewed={reload} />}
+        <aside className="stack stagger">
+          {canReview && (
+            <ReviewPanel
+              submissionId={submission.id}
+              studentName={thesis.student_name}
+              onReviewed={async (decision) => {
+                toast.success(decision === 'approved' ? 'Submission approved' : 'Revisions requested');
+                await reload();
+              }}
+            />
+          )}
+
+          {submission.status === 'pending' && !canReview && (
+            <section className="card waiting-card">
+              <span className="review-result-icon tone-info">
+                <Clock size={20} />
+              </span>
+              <div>
+                <strong>Waiting for review</strong>
+                <span className="muted">
+                  {thesis.adviser_name
+                    ? `${thesis.adviser_name} will review this submission.`
+                    : 'An adviser needs to be assigned first.'}
+                </span>
+              </div>
+            </section>
+          )}
 
           <section className="card">
             <div className="card-header">
@@ -233,15 +311,6 @@ export default function SubmissionDetail() {
                   <SubmissionStatusBadge status={submission.status} />
                 </dd>
               </div>
-              {submission.reviewed_at && (
-                <div>
-                  <dt>Reviewed</dt>
-                  <dd>
-                    {formatDateTime(submission.reviewed_at)}
-                    {submission.reviewer_name && <span className="muted"> by {submission.reviewer_name}</span>}
-                  </dd>
-                </div>
-              )}
             </dl>
           </section>
         </aside>

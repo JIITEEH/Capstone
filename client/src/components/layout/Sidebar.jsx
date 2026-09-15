@@ -1,27 +1,31 @@
-import { NavLink } from 'react-router';
-import { BookOpen, GraduationCap, LayoutDashboard, Library, LogOut, UserRound, Users, X } from 'lucide-react';
+import { Link, NavLink } from 'react-router';
+import { BookOpen, CalendarDays, CalendarPlus, LayoutDashboard, Library, LogOut, UserRound, Users, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 
+// Each role only sees the features it can use
 const NAV_BY_ROLE = {
   student: [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
     { to: '/thesis', label: 'My Thesis', icon: BookOpen },
+    { to: '/schedule', label: 'Schedule', icon: CalendarDays },
   ],
   adviser: [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
     { to: '/theses', label: 'My Advisees', icon: Library },
+    { to: '/schedule', label: 'Schedule', icon: CalendarDays },
   ],
   admin: [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
     { to: '/theses', label: 'All Theses', icon: Library },
+    { to: '/schedule', label: 'Schedule', icon: CalendarDays },
     { to: '/users', label: 'Users', icon: Users },
   ],
 };
 
-const WORKSPACE_LABEL = {
-  student: 'Student workspace',
-  adviser: 'Adviser workspace',
-  admin: 'Administration',
+const PROMO_BY_ROLE = {
+  student: { lead: 'Book', rest: 'a consultation', text: 'Meet your adviser before the next stage' },
+  adviser: { lead: 'Plan', rest: 'your consultations', text: 'Keep every advisee meeting on track' },
+  admin: { lead: 'Schedule', rest: 'the next defense', text: 'Set dates and panels in one place' },
 };
 
 function navClass({ isActive }) {
@@ -30,43 +34,49 @@ function navClass({ isActive }) {
 
 export default function Sidebar({ onClose }) {
   const { user, logout } = useAuth();
+  const promo = PROMO_BY_ROLE[user.role];
 
   return (
     <aside className="sidebar" aria-label="Main navigation">
       <div className="sidebar-brand">
-        <div className="brand-mark">
-          <GraduationCap size={20} />
-        </div>
-        <div className="brand-text">
-          <strong>ThesisTrack</strong>
-          <span>Thesis Management System</span>
-        </div>
+        <span className="brand-mark" aria-hidden="true" />
+        <strong className="brand-name">ThesisTrack</strong>
         <button type="button" className="icon-btn sidebar-close" onClick={onClose} aria-label="Close menu">
           <X size={18} />
         </button>
       </div>
 
       <nav className="sidebar-nav">
-        <span className="nav-label">{WORKSPACE_LABEL[user.role]}</span>
+        <span className="nav-label">Menu</span>
         {NAV_BY_ROLE[user.role].map(({ to, label, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end} className={navClass}>
-            <Icon size={18} />
+            <Icon size={21} />
             {label}
           </NavLink>
         ))}
 
-        <span className="nav-label">Account</span>
+        <span className="nav-label">General</span>
         <NavLink to="/profile" className={navClass}>
-          <UserRound size={18} />
+          <UserRound size={21} />
           Profile
         </NavLink>
+        <button type="button" className="nav-link" onClick={logout}>
+          <LogOut size={21} />
+          Logout
+        </button>
       </nav>
 
-      <div className="sidebar-footer">
-        <button type="button" className="nav-link" onClick={logout}>
-          <LogOut size={18} />
-          Sign out
-        </button>
+      <div className="sidebar-promo">
+        <span className="promo-icon" aria-hidden="true">
+          <CalendarPlus size={15} />
+        </span>
+        <strong className="promo-title">
+          <span>{promo.lead}</span> {promo.rest}
+        </strong>
+        <p>{promo.text}</p>
+        <Link to="/schedule" className="promo-btn">
+          Open Schedule
+        </Link>
       </div>
     </aside>
   );

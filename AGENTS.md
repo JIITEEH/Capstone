@@ -39,4 +39,11 @@ A Thesis Management System with three roles: Student, Adviser, and Admin.
 
 - Enforce every permission on the server. Client-side route guards are only for UX.
 - Thesis and submission access goes through `server/src/services/access.js`. Users without access get a 404, not a 403.
-- Thesis status is derived from submissions by `Thesis.recomputeStatus()`. Call it after any change to submissions.
+- Thesis status is derived from submissions by `Thesis.recomputeStatus()`. Call it after any change to submissions or reviews.
+- Keep features role-specific. Reviews and comments belong to the student and adviser. Thesis content belongs to the student. Admins manage users, adviser assignment, status, defenses, and deletion. Update the permissions table in `README.md` when this changes.
+- Schedule access goes through `canViewSchedule` and `canManageSchedule` in `services/access.js`.
+
+## Database rules
+
+- The database is relational SQLite. Keep data normalized: a submission's status comes from the `reviews` table through the `submission_details` view, so don't add a status column back to `submissions`.
+- Whenever `server/src/db/schema.sql` changes, bump `SCHEMA_VERSION` in `server/src/db/index.js` and update `server/src/db/seed.js` and the ER diagram in `README.md`.

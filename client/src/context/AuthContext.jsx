@@ -26,8 +26,8 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, [logout]);
 
-  const startSession = useCallback(({ token, user }) => {
-    tokenStore.set(token);
+  const startSession = useCallback(({ token, user }, remember = true) => {
+    tokenStore.set(token, { remember });
     setUser(user);
     return user;
   }, []);
@@ -36,7 +36,8 @@ export function AuthProvider({ children }) {
     () => ({
       user,
       loading,
-      login: async (email, password) => startSession(await api.login(email, password)),
+      login: async (email, password, remember = false) =>
+        startSession(await api.login(email, password, remember), remember),
       register: async (data) => startSession(await api.register(data)),
       logout,
       setUser,

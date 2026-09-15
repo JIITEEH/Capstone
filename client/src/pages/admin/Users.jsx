@@ -6,6 +6,7 @@ import { EmptyState, LoadState, Spinner } from '../../components/ui/Feedback.jsx
 import Modal, { ConfirmDialog } from '../../components/ui/Modal.jsx';
 import PageHeader from '../../components/ui/PageHeader.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
 import useApi from '../../hooks/useApi.js';
 import { api } from '../../services/api.js';
 import { ROLES } from '../../utils/constants.js';
@@ -121,6 +122,7 @@ function UserForm({ user, isSelf, onSaved, onCancel }) {
 
 export default function Users() {
   const { user: currentUser } = useAuth();
+  const toast = useToast();
   const [role, setRole] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -139,6 +141,7 @@ export default function Users() {
     setDeleteState({ busy: true, error: '' });
     try {
       await api.deleteUser(deleting.id);
+      toast.success(`${deleting.name} was deleted`);
       setDeleting(null);
       setDeleteState({ busy: false, error: '' });
       reload();
@@ -274,6 +277,7 @@ export default function Users() {
             isSelf={editing !== 'new' && editing.id === currentUser.id}
             onCancel={() => setEditing(null)}
             onSaved={async () => {
+              toast.success(editing === 'new' ? 'User created' : 'User updated');
               setEditing(null);
               await reload();
             }}

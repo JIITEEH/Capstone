@@ -16,7 +16,9 @@ const config = {
   databasePath: path.resolve(serverRoot, process.env.DATABASE_PATH || './data/app.db'),
   uploadDir: path.resolve(serverRoot, process.env.UPLOAD_DIR || './uploads'),
   jwtSecret: process.env.JWT_SECRET || 'dev-only-secret-change-me',
-  jwtExpiresIn: '7d',
+  // "Keep me signed in" gets the longer session
+  jwtExpiresIn: '12h',
+  jwtRememberExpiresIn: '30d',
   maxUploadBytes: 20 * 1024 * 1024,
 };
 

@@ -7,12 +7,12 @@ const SELECT_THESIS = `
     s.program AS student_program,
     a.name    AS adviser_name,
     a.email   AS adviser_email,
-    (SELECT GROUP_CONCAT(DISTINCT x.stage) FROM submissions x
+    (SELECT GROUP_CONCAT(DISTINCT x.stage) FROM submission_details x
        WHERE x.thesis_id = t.id AND x.status = 'approved') AS approved_stage_keys,
-    (SELECT COUNT(DISTINCT x.stage) FROM submissions x
+    (SELECT COUNT(DISTINCT x.stage) FROM submission_details x
        WHERE x.thesis_id = t.id AND x.status = 'approved') AS approved_stages,
-    (SELECT COUNT(*) FROM submissions x WHERE x.thesis_id = t.id AND x.status = 'pending') AS pending_count,
-    (SELECT COUNT(*) FROM submissions x WHERE x.thesis_id = t.id) AS submission_count
+    (SELECT COUNT(*) FROM submission_details x WHERE x.thesis_id = t.id AND x.status = 'pending') AS pending_count,
+    (SELECT COUNT(*) FROM submission_details x WHERE x.thesis_id = t.id) AS submission_count
   FROM theses t
   JOIN users s ON s.id = t.student_id
   LEFT JOIN users a ON a.id = t.adviser_id`;
@@ -82,9 +82,9 @@ export function recomputeStatus(thesisId) {
   const row = db
     .prepare(
       `SELECT
-         EXISTS (SELECT 1 FROM submissions WHERE thesis_id = ? AND stage = 'final' AND status = 'approved') AS final_approved,
-         EXISTS (SELECT 1 FROM submissions WHERE thesis_id = ? AND status = 'pending') AS has_pending,
-         (SELECT status FROM submissions WHERE thesis_id = ? AND status != 'pending'
+         EXISTS (SELECT 1 FROM submission_details WHERE thesis_id = ? AND stage = 'final' AND status = 'approved') AS final_approved,
+         EXISTS (SELECT 1 FROM submission_details WHERE thesis_id = ? AND status = 'pending') AS has_pending,
+         (SELECT status FROM submission_details WHERE thesis_id = ? AND status != 'pending'
             ORDER BY reviewed_at DESC, id DESC LIMIT 1) AS last_decision`,
     )
     .get(thesisId, thesisId, thesisId);

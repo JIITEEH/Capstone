@@ -21,6 +21,22 @@ export const SUBMISSION_STATUS = {
   revisions_requested: { label: 'Revisions requested', tone: 'warning' },
 };
 
+export const SCHEDULE_TYPES = {
+  consultation: { label: 'Consultation', tone: 'info' },
+  proposal_defense: { label: 'Proposal defense', tone: 'primary' },
+  final_defense: { label: 'Final defense', tone: 'warning' },
+};
+
+export const SCHEDULE_STATUS = {
+  scheduled: { label: 'Scheduled', tone: 'info' },
+  completed: { label: 'Completed', tone: 'success' },
+  cancelled: { label: 'Cancelled', tone: 'danger' },
+};
+
+export const MEETING_MODES = { in_person: 'In person', online: 'Online' };
+
+export const DURATIONS = [30, 45, 60, 90, 120, 180];
+
 export const ROLES = {
   student: { label: 'Student', tone: 'info' },
   adviser: { label: 'Adviser', tone: 'primary' },
