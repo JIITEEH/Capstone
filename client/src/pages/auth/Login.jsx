@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { KeyRound } from 'lucide-react';
+import { KeyRound, UserPlus } from 'lucide-react';
 import PasswordInput from '../../components/ui/PasswordInput.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import useApi from '../../hooks/useApi.js';
@@ -53,8 +53,8 @@ export default function Login() {
 
   return (
     <AuthLayout>
-      <h2>Sign in</h2>
-      <p className="muted">Welcome back. Enter your account details to continue.</p>
+      <h2>Welcome back</h2>
+      <p className="muted">Sign in to continue to your thesis workspace</p>
 
       {location.state?.notice && <p className="form-success auth-notice">{location.state.notice}</p>}
 
@@ -66,6 +66,7 @@ export default function Login() {
             type="email"
             className="input"
             autoComplete="email"
+            placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -73,16 +74,12 @@ export default function Login() {
           />
         </div>
         <div className="field">
-          <div className="field-label-row">
-            <label htmlFor="login-password">Password</label>
-            <Link to="/forgot-password" state={{ email }} className="field-link">
-              Forgot password?
-            </Link>
-          </div>
+          <label htmlFor="login-password">Password</label>
           <PasswordInput
             id="login-password"
             ref={passwordRef}
             autoComplete="current-password"
+            placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -98,9 +95,16 @@ export default function Login() {
         </button>
       </form>
 
-      <p className="auth-switch">
-        New student? <Link to="/register">Create an account</Link>
-      </p>
+      <div className="auth-alt">
+        <Link to="/forgot-password" state={{ email }} className="btn">
+          <KeyRound size={17} />
+          Forgot password
+        </Link>
+        <Link to="/register" className="btn">
+          <UserPlus size={17} />
+          Register
+        </Link>
+      </div>
 
       {demo?.accounts.length > 0 && (
         <details className="demo-accounts">
