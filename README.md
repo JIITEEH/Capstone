@@ -25,7 +25,7 @@ Every seeded account uses the password **`password123`**. In development, the lo
 
 | Role    | Email                  | What you'll see                                                        |
 | ------- | ---------------------- | ---------------------------------------------------------------------- |
-| Admin   | `admin@tms.edu`        | System stats, all theses and events, user management                   |
+| Admin   | `jtcatimbang1019@gmail.com` | System stats, all theses and events, user management                   |
 | Adviser | `maria.santos@tms.edu` | One advisee, one submission to review, upcoming consultation and defense |
 | Student | `ana.cruz@tms.edu`     | Two stages approved, Chapters 4–5 under review, final defense scheduled |
 

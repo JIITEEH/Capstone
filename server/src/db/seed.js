@@ -128,7 +128,7 @@ function schedule({ thesisId, type, title, day, hour, minutes, mode, location, n
 
 db.exec('BEGIN');
 
-const admin = user('System Administrator', 'admin@tms.edu', 'admin', 'Graduate School Office', '-90 days');
+const admin = user('System Administrator', 'jtcatimbang1019@gmail.com', 'admin', 'Graduate School Office', '-90 days');
 const santos = user('Dr. Maria Santos', 'maria.santos@tms.edu', 'adviser', 'Department of Computer Science', '-80 days');
 const ana = user('Ana Cruz', 'ana.cruz@tms.edu', 'student', 'BS Computer Science', '-50 days');
 
@@ -217,6 +217,6 @@ Thesis.recomputeStatus(anaThesis);
 db.exec('COMMIT');
 
 console.log('Database seeded. Every demo account uses the password:', DEMO_PASSWORD);
-console.log('  Admin:   admin@tms.edu');
+console.log('  Admin:   jtcatimbang1019@gmail.com');
 console.log('  Adviser: maria.santos@tms.edu');
 console.log('  Student: ana.cruz@tms.edu');
