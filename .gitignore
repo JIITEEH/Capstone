@@ -10,6 +10,9 @@ build/
 .env.*
 !.env.example
 
+# Uploaded manuscripts
+server/uploads/
+
 # SQLite database files
 *.db
 *.db-journal
