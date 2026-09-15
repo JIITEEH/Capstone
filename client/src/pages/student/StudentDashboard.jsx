@@ -27,6 +27,8 @@ function bannerMessage(thesis, approved) {
   }
   if (thesis.status === 'under_review') return 'Your latest submission is with your adviser for review.';
   const next = STAGES.find((stage) => !approved.includes(stage.key));
+  // An admin can override the status, so every stage may be approved without the thesis being "completed"
+  if (!next) return 'Every stage of your thesis is approved.';
   const percent = Math.round((approved.length / STAGES.length) * 100);
   return `You're ${percent}% of the way there. Next up: ${next.label}.`;
 }

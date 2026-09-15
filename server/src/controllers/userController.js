@@ -57,7 +57,10 @@ export function updateUser(req, res) {
     oneOf(body.role, ROLES, 'role');
     if (id === req.user.id) throw new HttpError(400, "You can't change your own role");
     if (existing.role === 'student' && Thesis.findByStudent(id)) {
-      throw new HttpError(400, 'This student has a thesis. Delete the thesis before changing their role.');
+      throw new HttpError(
+        400,
+        'This student is in a thesis group. Remove them from the group, or delete the thesis, before changing their role.',
+      );
     }
     if (existing.role === 'adviser' && Thesis.list({ adviserId: id }).length) {
       throw new HttpError(400, "Reassign this adviser's students before changing their role.");

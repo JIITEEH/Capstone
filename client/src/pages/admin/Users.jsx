@@ -290,7 +290,7 @@ export default function Users() {
         title={`Delete ${deleting?.name}?`}
         message={
           deleting?.role === 'student' && deleting?.has_thesis
-            ? "This also permanently deletes the student's thesis, submissions, and uploaded files."
+            ? 'This permanently removes the account and takes them out of their thesis group. If they are the only member, the thesis, its submissions, and uploaded files are deleted too.'
             : 'This permanently removes the account. You can deactivate it instead to keep its history.'
         }
         confirmLabel="Delete user"
