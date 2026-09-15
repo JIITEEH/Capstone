@@ -88,6 +88,8 @@ export const api = {
   assignAdviser: (id, adviserId) => request(`/theses/${id}/adviser`, { method: 'PATCH', body: { adviserId } }),
   updateThesisStatus: (id, status) => request(`/theses/${id}/status`, { method: 'PATCH', body: { status } }),
   deleteThesis: (id) => request(`/theses/${id}`, { method: 'DELETE' }),
+  addThesisMember: (id, email) => request(`/theses/${id}/members`, { method: 'POST', body: { email } }),
+  removeThesisMember: (id, studentId) => request(`/theses/${id}/members/${studentId}`, { method: 'DELETE' }),
   createSubmission: (thesisId, formData) =>
     request(`/theses/${thesisId}/submissions`, { method: 'POST', body: formData }),
 

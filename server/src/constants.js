@@ -33,4 +33,7 @@ export const MEETING_MODES = ['in_person', 'online'];
 
 export const MAX_PANELISTS = 5;
 
+// Most students one thesis group can have, leader included
+export const MAX_GROUP_SIZE = 5;
+
 export const ALLOWED_UPLOAD_EXTENSIONS = ['.pdf', '.doc', '.docx'];

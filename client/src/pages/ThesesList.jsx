@@ -103,7 +103,7 @@ export default function ThesesList() {
               <thead>
                 <tr>
                   <th>Thesis</th>
-                  <th>Student</th>
+                  <th>Students</th>
                   {isAdmin && <th className="hide-tablet">Adviser</th>}
                   <th>Progress</th>
                   <th>Status</th>

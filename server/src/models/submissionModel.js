@@ -1,4 +1,5 @@
 import db from '../db/index.js';
+import { MEMBER_NAMES } from './thesisModel.js';
 
 // submission_details (see schema.sql) adds status and review columns from the reviews table
 const SELECT_SUBMISSION = `
@@ -59,10 +60,9 @@ export function listPending({ adviserId } = {}) {
   return db
     .prepare(
       `SELECT sub.id, sub.stage, sub.submitted_at, sub.thesis_id,
-         t.title AS thesis_title, s.name AS student_name
+         t.title AS thesis_title, ${MEMBER_NAMES} AS student_name
        FROM submission_details sub
        JOIN theses t ON t.id = sub.thesis_id
-       JOIN users s ON s.id = t.student_id
        WHERE sub.status = 'pending' ${adviserId ? 'AND t.adviser_id = ?' : ''}
        ORDER BY sub.submitted_at ASC`,
     )

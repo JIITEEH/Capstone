@@ -1,4 +1,5 @@
 import { ROLES } from '../constants.js';
+import { transaction } from '../db/index.js';
 import * as Submission from '../models/submissionModel.js';
 import * as Thesis from '../models/thesisModel.js';
 import * as User from '../models/userModel.js';
@@ -82,11 +83,17 @@ export function deleteUser(req, res) {
   const existing = User.findById(id);
   if (!existing) throw new HttpError(404, 'User not found');
 
-  // Deleting a student cascades to their thesis, so remove the uploaded files too
+  // A student leaves their group when deleted. If they were its last member the thesis goes too,
+  // along with its uploaded files; otherwise the group keeps the thesis and gets a new leader if needed.
   const thesis = existing.role === 'student' ? Thesis.findByStudent(id) : null;
-  const files = thesis ? Submission.storedNamesForThesis(thesis.id) : [];
+  const deletesThesis = Boolean(thesis) && thesis.member_count === 1;
+  const files = deletesThesis ? Submission.storedNamesForThesis(thesis.id) : [];
 
-  User.remove(id);
+  transaction(() => {
+    if (deletesThesis) Thesis.remove(thesis.id);
+    else if (thesis) Thesis.removeMember(thesis.id, id);
+    User.remove(id);
+  });
   deleteStoredFiles(files);
   res.status(204).end();
 }

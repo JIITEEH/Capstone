@@ -1872,6 +1872,51 @@ a.bar-row:hover .bar-label {
   color: var(--text-muted);
 }
 
+/* Thesis group members on the thesis page */
+.group-members {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.group-members-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.member-row > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.member-row strong,
+.member-row .muted {
+  overflow-wrap: anywhere;
+}
+
+.member-add {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.group-adviser {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
 .file-card {
   display: flex;
   align-items: center;

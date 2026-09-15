@@ -5,7 +5,7 @@ import { DatabaseSync } from 'node:sqlite';
 import config from '../config/index.js';
 
 // Bump when schema.sql changes so existing databases get rebuilt instead of silently breaking
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 fs.mkdirSync(path.dirname(config.databasePath), { recursive: true });
 

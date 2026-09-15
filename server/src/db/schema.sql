@@ -12,10 +12,9 @@ CREATE TABLE IF NOT EXISTS users (
   created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
--- One thesis per student; the adviser is assigned by an admin
+-- A thesis written by a group of students (see thesis_members); the adviser is assigned by an admin
 CREATE TABLE IF NOT EXISTS theses (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  student_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
   adviser_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   title      TEXT    NOT NULL,
   abstract   TEXT    NOT NULL DEFAULT '',
@@ -24,6 +23,15 @@ CREATE TABLE IF NOT EXISTS theses (
              CHECK (status IN ('draft', 'under_review', 'revisions_required', 'in_progress', 'completed')),
   created_at TEXT    NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Students in a thesis group. A student belongs to at most one thesis, and each group has one leader.
+CREATE TABLE IF NOT EXISTS thesis_members (
+  thesis_id  INTEGER NOT NULL REFERENCES theses(id) ON DELETE CASCADE,
+  student_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  is_leader  INTEGER NOT NULL DEFAULT 0 CHECK (is_leader IN (0, 1)),
+  joined_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (thesis_id, student_id)
 );
 
 -- A manuscript uploaded for one stage of the thesis. Its status comes from its review.
@@ -117,3 +125,5 @@ CREATE INDEX IF NOT EXISTS idx_schedules_starts_at  ON schedules(starts_at);
 CREATE INDEX IF NOT EXISTS idx_panelists_adviser    ON schedule_panelists(adviser_id);
 CREATE INDEX IF NOT EXISTS idx_activity_thesis      ON activity(thesis_id);
 CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets(user_id);
+-- At most one leader per group
+CREATE UNIQUE INDEX IF NOT EXISTS idx_members_one_leader ON thesis_members(thesis_id) WHERE is_leader = 1;

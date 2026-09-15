@@ -38,8 +38,9 @@ Every rule below is enforced by the API. The UI also hides what a role can't use
 | Feature                                   | Student                    | Adviser                          | Admin                        |
 | ----------------------------------------- | -------------------------- | -------------------------------- | ---------------------------- |
 | Dashboard                                 | Own progress and feedback  | Review queue and advisees        | System overview              |
-| Create a thesis (one per student)         | ✅                         | —                                | —                            |
-| View theses                               | Own only                   | Assigned advisees only           | All                          |
+| Create a thesis (one per student; creator leads the group) | ✅        | —                                | —                            |
+| Add or remove group members (up to 5)     | Group leader; any member can leave | —                        | ✅                           |
+| View theses                               | Own group's only           | Assigned advisees only           | All                          |
 | Edit thesis title, abstract, keywords     | Own, until completed       | —                                | —                            |
 | Upload submissions (PDF/DOC/DOCX, 20 MB)  | Own thesis                 | —                                | —                            |
 | Download submission files                 | Own                        | Advisees                         | All                          |
@@ -57,7 +58,9 @@ Users who try to open something outside their role get a 403 (wrong role) or 404
 
 ### Thesis workflow
 
-A thesis moves through four stages: **Proposal → Chapters 1–3 → Chapters 4–5 → Final Manuscript**.
+A thesis belongs to a **group of 1 to 5 students**. The student who creates it is the group leader and adds classmates by the email on their student accounts. Every member can edit the thesis, submit, and comment. If the leader leaves, the longest-standing member takes over.
+
+A thesis moves through four stages, in order: **Proposal → Chapters 1–3 → Chapters 4–5 → Final Manuscript**.
 
 1. The student uploads a manuscript for a stage. The thesis becomes **Under review**. Only one submission can be pending at a time.
 2. The assigned adviser adds a **review**: approve, or request revisions with written feedback.
@@ -73,7 +76,8 @@ The app uses a relational SQLite database. The schema lives in [`server/src/db/s
 
 ```mermaid
 erDiagram
-    users ||--o| theses : "writes (student)"
+    users ||--o| thesis_members : "belongs to (student)"
+    theses ||--|{ thesis_members : "written by"
     users ||--o{ theses : "advises"
     theses ||--o{ submissions : "has"
     submissions ||--o| reviews : "receives"
@@ -96,10 +100,14 @@ erDiagram
     }
     theses {
         int id PK
-        int student_id FK,UK
         int adviser_id FK
         text title
         text status
+    }
+    thesis_members {
+        int thesis_id PK,FK
+        int student_id PK,FK,UK
+        int is_leader
     }
     submissions {
         int id PK
@@ -151,6 +159,7 @@ erDiagram
 - **Foreign keys** are enforced (`PRAGMA foreign_keys = ON`). Deleting a thesis cascades to its submissions, reviews, comments, schedules, and activity.
 - **`reviews`** has a unique `submission_id`, so a submission can only be reviewed once.
 - **`schedule_panelists`** is a join table for the many-to-many link between defenses and advisers.
+- **`thesis_members`** links students to their thesis group. `student_id` is unique, so a student belongs to at most one thesis, and a partial unique index allows only one leader per group. Deleting a student removes them from their group; if they were the last member, the thesis is deleted too.
 - **`submission_details`** is a view that joins each submission with its review. A submission's status (`pending`, `approved`, `revisions_requested`) comes from its review, so status is never stored twice.
 - **`password_resets`** holds one-time reset links. Only a SHA-256 hash of each token is stored. A link expires after 1 hour and is deleted once used. No email service is set up yet, so outside production the reset link is printed in the server console and shown on the "Forgot password" page.
 - **Schema versioning:** `SCHEMA_VERSION` in `server/src/db/index.js` must be bumped whenever `schema.sql` changes.
@@ -205,6 +214,7 @@ Capstone/
 | PATCH        | `/api/theses/:id/adviser`, `/api/theses/:id/status` | Admin                       |
 | DELETE       | `/api/theses/:id`                          | Admin                                |
 | POST         | `/api/theses/:id/submissions`              | Student (own)                        |
+| POST / DELETE | `/api/theses/:id/members`, `/api/theses/:id/members/:studentId` | Group leader, Admin (members can remove themselves) |
 | GET          | `/api/submissions/:id`, `/api/submissions/:id/file` | Anyone with thesis access   |
 | POST         | `/api/submissions/:id/comments`            | Student (own), assigned adviser      |
 | PATCH        | `/api/submissions/:id/review`              | Assigned adviser                     |

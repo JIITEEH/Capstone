@@ -9,13 +9,14 @@ export default function MyThesis() {
   const { data: theses, loading, error, reload } = useApi(() => api.listTheses(), []);
 
   if (!theses) return <LoadState loading={loading} error={error} />;
-  if (theses.length) return <ThesisDetail thesisId={theses[0].id} />;
+  // Leaving the group reloads this page, which then offers to start a new thesis
+  if (theses.length) return <ThesisDetail thesisId={theses[0].id} onLeft={reload} />;
 
   return (
     <>
       <PageHeader
         title="Start your thesis"
-        subtitle="Add the basic details now. You can edit them until your thesis is completed."
+        subtitle="Add the basic details now. You'll lead the group and can add classmates afterwards. Already part of a group? Ask your group leader to add you by email."
       />
       <section className="card form-card">
         <ThesisForm

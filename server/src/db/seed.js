@@ -42,10 +42,16 @@ function user(name, email, role, program, ago, hash = passwordHash) {
 }
 
 const insertThesis = db.prepare(
-  "INSERT INTO theses (student_id, adviser_id, title, abstract, keywords, created_at) VALUES (?, ?, ?, ?, ?, datetime('now', ?))",
+  "INSERT INTO theses (adviser_id, title, abstract, keywords, created_at) VALUES (?, ?, ?, ?, datetime('now', ?))",
 );
-function thesis(studentId, adviserId, title, abstract, keywords, ago) {
-  return Number(insertThesis.run(studentId, adviserId, title, abstract, keywords, ago).lastInsertRowid);
+const insertMember = db.prepare(
+  "INSERT INTO thesis_members (thesis_id, student_id, is_leader, joined_at) VALUES (?, ?, ?, datetime('now', ?))",
+);
+// The first student is the group leader; any others join as members
+function thesis(studentIds, adviserId, title, abstract, keywords, ago) {
+  const id = Number(insertThesis.run(adviserId, title, abstract, keywords, ago).lastInsertRowid);
+  studentIds.forEach((studentId, index) => insertMember.run(id, studentId, index === 0 ? 1 : 0, ago));
+  return id;
 }
 
 // Builds a small one-page PDF so seeded submissions have a file to download
@@ -81,7 +87,12 @@ const STAGE_LABELS = {
   final: 'Final Manuscript',
 };
 
-const thesisInfo = db.prepare('SELECT t.title, u.name FROM theses t JOIN users u ON u.id = t.student_id WHERE t.id = ?');
+const thesisInfo = db.prepare(
+  `SELECT t.title, u.name FROM theses t
+   JOIN thesis_members m ON m.thesis_id = t.id AND m.is_leader = 1
+   JOIN users u ON u.id = m.student_id
+   WHERE t.id = ?`,
+);
 const insertSubmission = db.prepare(
   `INSERT INTO submissions (thesis_id, stage, notes, file_name, stored_name, file_size, mime_type, submitted_at)
    VALUES (?, ?, ?, ?, ?, ?, 'application/pdf', datetime('now', ?))`,
@@ -153,7 +164,7 @@ const ana = user('Ana Cruz', 'ana.cruz@tms.edu', 'student', 'BS Computer Science
 
 // Ana: two stages approved, third waiting for review, final defense coming up
 const anaThesis = thesis(
-  ana,
+  [ana],
   santos,
   'A Machine Learning Approach to Early Detection of Rice Crop Diseases',
   'This study develops a convolutional neural network that classifies common rice leaf diseases from smartphone photos, helping farmers act before infections spread.',

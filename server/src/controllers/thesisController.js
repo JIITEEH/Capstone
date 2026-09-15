@@ -1,14 +1,14 @@
-import { STAGES, THESIS_STATUSES } from '../constants.js';
+import { MAX_GROUP_SIZE, STAGES, THESIS_STATUSES } from '../constants.js';
 import { transaction } from '../db/index.js';
 import * as Activity from '../models/activityModel.js';
 import * as Schedule from '../models/scheduleModel.js';
 import * as Submission from '../models/submissionModel.js';
 import * as Thesis from '../models/thesisModel.js';
 import * as User from '../models/userModel.js';
-import { getAccessibleThesis, withSchedulePermissions } from '../services/access.js';
+import { canManageGroup, getAccessibleThesis, withSchedulePermissions } from '../services/access.js';
 import { deleteStoredFiles } from '../utils/files.js';
 import { HttpError } from '../utils/httpError.js';
-import { oneOf, optionalText, queryString, requireText } from '../utils/validate.js';
+import { oneOf, optionalText, parseId, queryString, requireEmail, requireText } from '../utils/validate.js';
 
 function readThesisFields(body, { partial }) {
   const fields = {};
@@ -49,6 +49,8 @@ export function getThesis(req, res) {
   const thesis = getAccessibleThesis(req.user, req.params.id);
   res.json({
     thesis,
+    members: Thesis.listMembers(thesis.id),
+    groupLimit: MAX_GROUP_SIZE,
     submissions: Submission.listByThesis(thesis.id),
     schedules: Schedule.list({ thesisId: thesis.id, range: 'upcoming' }).map((event) =>
       withSchedulePermissions(req.user, event),
@@ -110,6 +112,75 @@ export function deleteThesis(req, res) {
   const files = Submission.storedNamesForThesis(thesis.id);
   Thesis.remove(thesis.id);
   deleteStoredFiles(files);
+  res.status(204).end();
+}
+
+// Completed theses are frozen for students; admins can still fix the group
+function assertGroupEditable(user, thesis) {
+  if (thesis.status === 'completed' && user.role !== 'admin') {
+    throw new HttpError(400, 'Completed theses can no longer change members');
+  }
+}
+
+// The group leader or an admin adds a classmate by the email on their student account
+export function addMember(req, res) {
+  const thesis = getAccessibleThesis(req.user, req.params.id);
+  if (!canManageGroup(req.user, thesis)) throw new HttpError(403, 'Only the group leader can add members');
+  assertGroupEditable(req.user, thesis);
+
+  const email = requireEmail(req.body?.email);
+  const student = User.findByEmailWithHash(email);
+  if (!student || student.role !== 'student' || !student.is_active) {
+    throw new HttpError(400, 'No active student account uses that email');
+  }
+
+  const current = Thesis.findByStudent(student.id);
+  if (current) {
+    throw new HttpError(
+      409,
+      current.id === thesis.id
+        ? `${student.name} is already in this group`
+        : `${student.name} is already in another thesis group`,
+    );
+  }
+  if (thesis.member_count >= MAX_GROUP_SIZE) {
+    throw new HttpError(400, `A group can have at most ${MAX_GROUP_SIZE} students`);
+  }
+
+  transaction(() => {
+    Thesis.addMember(thesis.id, student.id);
+    Activity.log(thesis.id, req.user.id, `added ${student.name} to the group`);
+  });
+  res.status(201).json(Thesis.listMembers(thesis.id));
+}
+
+// The leader or an admin removes a member, and any member can remove themselves to leave.
+// A thesis always keeps at least one student; if the leader goes, the next member takes over.
+export function removeMember(req, res) {
+  const thesis = getAccessibleThesis(req.user, req.params.id);
+  const studentId = parseId(req.params.studentId, 'Member not found');
+  const members = Thesis.listMembers(thesis.id);
+  const member = members.find((m) => m.id === studentId);
+  if (!member) throw new HttpError(404, 'Member not found');
+
+  const leaving = studentId === req.user.id;
+  if (!leaving && !canManageGroup(req.user, thesis)) {
+    throw new HttpError(403, 'Only the group leader can remove members');
+  }
+  assertGroupEditable(req.user, thesis);
+  if (members.length === 1) {
+    throw new HttpError(
+      400,
+      leaving
+        ? "You're the only member, so you can't leave. An admin can delete the thesis instead."
+        : 'A thesis needs at least one student',
+    );
+  }
+
+  transaction(() => {
+    Thesis.removeMember(thesis.id, studentId);
+    Activity.log(thesis.id, req.user.id, leaving ? 'left the group' : `removed ${member.name} from the group`);
+  });
   res.status(204).end();
 }
 

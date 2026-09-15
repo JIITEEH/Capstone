@@ -294,7 +294,7 @@ export default function SubmissionDetail() {
             </div>
             <dl className="details">
               <div>
-                <dt>Student</dt>
+                <dt>{thesis.member_count > 1 ? 'Students' : 'Student'}</dt>
                 <dd>{thesis.student_name}</dd>
               </div>
               <div>

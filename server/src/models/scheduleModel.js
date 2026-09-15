@@ -1,12 +1,13 @@
 import db from '../db/index.js';
+import { MEMBER_NAMES } from './thesisModel.js';
 
 const ENDS_AT = "datetime(sc.starts_at, '+' || sc.duration_minutes || ' minutes')";
 
 const SELECT_SCHEDULE = `
   SELECT sc.*,
     ${ENDS_AT} AS ends_at,
-    t.title AS thesis_title, t.student_id, t.adviser_id,
-    s.name AS student_name,
+    t.title AS thesis_title, t.adviser_id,
+    ${MEMBER_NAMES} AS student_name,
     a.name AS adviser_name,
     c.name AS created_by_name,
     (SELECT json_group_array(json_object('id', u.id, 'name', u.name))
@@ -15,7 +16,6 @@ const SELECT_SCHEDULE = `
        WHERE p.schedule_id = sc.id) AS panelists_json
   FROM schedules sc
   JOIN theses t ON t.id = sc.thesis_id
-  JOIN users s ON s.id = t.student_id
   LEFT JOIN users a ON a.id = t.adviser_id
   LEFT JOIN users c ON c.id = sc.created_by`;
 
@@ -30,7 +30,7 @@ export function list({ studentId, adviserId, thesisId, range = 'all', limit } = 
   const where = [];
   const params = [];
   if (studentId) {
-    where.push('t.student_id = ?');
+    where.push('EXISTS (SELECT 1 FROM thesis_members mm WHERE mm.thesis_id = t.id AND mm.student_id = ?)');
     params.push(studentId);
   }
   if (adviserId) {

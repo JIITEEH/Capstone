@@ -4,6 +4,7 @@ import { CalendarPlus, ChevronLeft, ChevronRight, FileText, MessageSquare, Penci
 import ScheduleForm from '../components/schedule/ScheduleForm.jsx';
 import ScheduleList from '../components/schedule/ScheduleList.jsx';
 import AdminControls from '../components/thesis/AdminControls.jsx';
+import GroupMembers from '../components/thesis/GroupMembers.jsx';
 import SubmissionForm from '../components/thesis/SubmissionForm.jsx';
 import ThesisForm from '../components/thesis/ThesisForm.jsx';
 import ActivityFeed from '../components/ui/ActivityFeed.jsx';
@@ -33,7 +34,8 @@ function Person({ label, name, detail }) {
   );
 }
 
-export default function ThesisDetail({ thesisId }) {
+// onLeft runs after the signed-in student leaves this thesis group
+export default function ThesisDetail({ thesisId, onLeft }) {
   const params = useParams();
   const id = thesisId ?? params.id;
   const { user } = useAuth();
@@ -42,7 +44,7 @@ export default function ThesisDetail({ thesisId }) {
   const [modal, setModal] = useState(null);
 
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
-  const { thesis, submissions, schedules, activity } = data;
+  const { thesis, members, groupLimit, submissions, schedules, activity } = data;
 
   const isStudent = user.role === 'student';
   const isAdmin = user.role === 'admin';
@@ -182,7 +184,7 @@ export default function ThesisDetail({ thesisId }) {
                 compact
                 icon={Upload}
                 title="No submissions yet"
-                message={isStudent ? 'Start by submitting your proposal.' : 'The student has not submitted anything yet.'}
+                message={isStudent ? 'Start by submitting your proposal.' : 'Nothing has been submitted yet.'}
               />
             )}
           </section>
@@ -193,8 +195,8 @@ export default function ThesisDetail({ thesisId }) {
             <div className="card-header">
               <h3>People</h3>
             </div>
-            <div className="people">
-              <Person label="Student" name={thesis.student_name} detail={thesis.student_program || thesis.student_email} />
+            <GroupMembers thesis={thesis} members={members} limit={groupLimit} onChanged={reload} onLeft={onLeft} />
+            <div className="people group-adviser">
               <Person label="Adviser" name={thesis.adviser_name} detail={thesis.adviser_email} />
             </div>
           </section>

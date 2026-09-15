@@ -30,7 +30,7 @@ export function list({ role, search } = {}) {
     .prepare(
       `SELECT ${PUBLIC_COLUMNS},
          (SELECT COUNT(*) FROM theses t WHERE t.adviser_id = u.id) AS advisee_count,
-         EXISTS (SELECT 1 FROM theses t WHERE t.student_id = u.id) AS has_thesis
+         EXISTS (SELECT 1 FROM thesis_members m WHERE m.student_id = u.id) AS has_thesis
        FROM users u
        ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
        ORDER BY u.created_at DESC, u.id DESC`,
