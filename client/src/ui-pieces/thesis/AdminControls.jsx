@@ -12,6 +12,8 @@ export default function AdminControls({ thesis, onChanged }) {
   const navigate = useNavigate();
   const toast = useToast();
   const { data: advisers } = useApi(() => api.listAdvisers(), []);
+  const { data: terms } = useApi(() => api.listTerms(), []);
+  const [termId, setTermId] = useState(thesis.term_id ?? '');
   const [adviserId, setAdviserId] = useState(thesis.adviser_id ?? '');
   const [status, setStatus] = useState(thesis.status);
   const [busy, setBusy] = useState('');
@@ -21,7 +23,8 @@ export default function AdminControls({ thesis, onChanged }) {
   useEffect(() => {
     setAdviserId(thesis.adviser_id ?? '');
     setStatus(thesis.status);
-  }, [thesis.adviser_id, thesis.status]);
+    setTermId(thesis.term_id ?? '');
+  }, [thesis.adviser_id, thesis.status, thesis.term_id]);
 
   async function run(key, action, successMessage) {
     setBusy(key);
@@ -39,6 +42,7 @@ export default function AdminControls({ thesis, onChanged }) {
 
   const adviserChanged = String(adviserId) !== String(thesis.adviser_id ?? '');
   const statusChanged = status !== thesis.status;
+  const termChanged = String(termId) !== String(thesis.term_id ?? '');
 
   return (
     <section className="card">
@@ -91,6 +95,30 @@ export default function AdminControls({ thesis, onChanged }) {
             </button>
           </div>
           <span className="field-hint">Status updates automatically after each submission and review.</span>
+        </div>
+
+        <div className="field">
+          <label htmlFor="thesis-term">Term</label>
+          <div className="inline-field">
+            <select id="thesis-term" className="input" value={termId} onChange={(e) => setTermId(e.target.value)}>
+              <option value="">No term</option>
+              {terms?.map((term) => (
+                <option key={term.id} value={term.id}>
+                  {term.name}
+                  {term.is_current ? ' (current)' : ''}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={!termChanged || Boolean(busy)}
+              onClick={() => run('term', () => api.setThesisTerm(thesis.id, termId ? Number(termId) : null), 'Term updated')}
+            >
+              {busy === 'term' ? 'Saving…' : 'Move'}
+            </button>
+          </div>
+          <span className="field-hint">The term sets this thesis's stage due dates.</span>
         </div>
 
         {error && <p className="form-error">{error}</p>}

@@ -1,4 +1,5 @@
 import db from '../database/index.js';
+import { STAGES } from '../constants.js';
 
 // Every group member's name, leader first, for labelling a thesis by its students.
 // Expects the theses table to be aliased as t; mm/mu avoid clashing with the outer query's aliases.
@@ -8,6 +9,21 @@ export const MEMBER_NAMES = `(SELECT GROUP_CONCAT(mu.name, ', ' ORDER BY mm.is_l
      WHERE mm.thesis_id = t.id)`;
 
 const IS_MEMBER = 'EXISTS (SELECT 1 FROM thesis_members mm WHERE mm.thesis_id = t.id AND mm.student_id = ?)';
+
+const STAGE_ORDER = `CASE d.stage ${Object.keys(STAGES)
+  .map((key, index) => `WHEN '${key}' THEN ${index}`)
+  .join(' ')} END`;
+
+// The next deadline a group still has to meet: the earliest stage in its term with a due date and
+// nothing submitted for it yet. Completed theses have none.
+const NEXT_DEADLINE = `term_deadlines nd ON nd.term_id = t.term_id AND t.status != 'completed' AND nd.stage = (
+    SELECT d.stage FROM term_deadlines d
+    WHERE d.term_id = t.term_id
+      AND NOT EXISTS (SELECT 1 FROM submissions s WHERE s.thesis_id = t.id AND s.stage = d.stage)
+    ORDER BY ${STAGE_ORDER} LIMIT 1)`;
+
+// A due date is a calendar day, so the deadline passes at the end of that day in the server's time zone
+const TODAY = "date('now', 'localtime')";
 
 const SELECT_THESIS = `
   SELECT t.*,
@@ -22,11 +38,17 @@ const SELECT_THESIS = `
     (SELECT COUNT(DISTINCT x.stage) FROM submission_details x
        WHERE x.thesis_id = t.id AND x.status = 'approved') AS approved_stages,
     (SELECT COUNT(*) FROM submission_details x WHERE x.thesis_id = t.id AND x.status = 'pending') AS pending_count,
-    (SELECT COUNT(*) FROM submission_details x WHERE x.thesis_id = t.id) AS submission_count
+    (SELECT COUNT(*) FROM submission_details x WHERE x.thesis_id = t.id) AS submission_count,
+    tm.name   AS term_name,
+    nd.stage  AS next_due_stage,
+    nd.due_on AS next_due_on,
+    CAST(julianday(nd.due_on) - julianday(${TODAY}) AS INTEGER) AS next_due_days_left
   FROM theses t
-  LEFT JOIN users a ON a.id = t.adviser_id`;
+  LEFT JOIN users a ON a.id = t.adviser_id
+  LEFT JOIN terms tm ON tm.id = t.term_id
+  LEFT JOIN ${NEXT_DEADLINE}`;
 
-export function list({ studentId, adviserId, unassigned, status, search } = {}) {
+export function list({ studentId, adviserId, unassigned, status, search, termId, overdue } = {}) {
   const where = [];
   const params = [];
   if (studentId) {
@@ -42,6 +64,12 @@ export function list({ studentId, adviserId, unassigned, status, search } = {}) 
     where.push('t.status = ?');
     params.push(status);
   }
+  if (termId === 'none') where.push('t.term_id IS NULL');
+  else if (termId) {
+    where.push('t.term_id = ?');
+    params.push(termId);
+  }
+  if (overdue) where.push(`nd.due_on < ${TODAY}`);
   if (search) {
     where.push(`(t.title LIKE ? OR t.keywords LIKE ? OR EXISTS (
       SELECT 1 FROM thesis_members mm JOIN users mu ON mu.id = mm.student_id
@@ -67,10 +95,10 @@ export function findByStudent(studentId) {
 
 // The creating student becomes the group leader. Callers run this in a transaction
 // so a thesis never exists without its leader.
-export function create({ studentId, title, abstract, keywords }) {
+export function create({ studentId, title, abstract, keywords, termId = null }) {
   const result = db
-    .prepare('INSERT INTO theses (title, abstract, keywords) VALUES (?, ?, ?)')
-    .run(title, abstract, keywords);
+    .prepare('INSERT INTO theses (title, abstract, keywords, term_id) VALUES (?, ?, ?, ?)')
+    .run(title, abstract, keywords, termId);
   db.prepare('INSERT INTO thesis_members (thesis_id, student_id, is_leader) VALUES (?, ?, 1)').run(
     result.lastInsertRowid,
     studentId,
@@ -78,7 +106,7 @@ export function create({ studentId, title, abstract, keywords }) {
   return findById(result.lastInsertRowid);
 }
 
-const UPDATABLE = ['title', 'abstract', 'keywords', 'adviser_id', 'status'];
+const UPDATABLE = ['title', 'abstract', 'keywords', 'adviser_id', 'status', 'term_id'];
 
 export function update(id, fields) {
   const entries = Object.entries(fields).filter(([key, value]) => UPDATABLE.includes(key) && value !== undefined);

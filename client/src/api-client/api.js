@@ -133,6 +133,14 @@ export const api = {
   assignAdviser: (id, adviserId) => request(`/theses/${id}/adviser`, { method: 'PATCH', body: { adviserId } }),
   updateThesisStatus: (id, status) => request(`/theses/${id}/status`, { method: 'PATCH', body: { status } }),
   deleteThesis: (id) => request(`/theses/${id}`, { method: 'DELETE' }),
+  setThesisTerm: (id, termId) => request(`/theses/${id}/term`, { method: 'PATCH', body: { termId } }),
+
+  // Terms and their stage due dates (admin)
+  listTerms: () => request('/terms'),
+  createTerm: (data) => request('/terms', { method: 'POST', body: data }),
+  updateTerm: (id, data) => request(`/terms/${id}`, { method: 'PUT', body: data }),
+  deleteTerm: (id) => request(`/terms/${id}`, { method: 'DELETE' }),
+
   // Admins add members directly; group leaders invite, and the classmate accepts or declines
   addThesisMember: (id, email) => request(`/theses/${id}/members`, { method: 'POST', body: { email } }),
   inviteThesisMember: (id, email) => request(`/theses/${id}/invitations`, { method: 'POST', body: { email } }),

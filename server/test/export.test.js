@@ -77,7 +77,7 @@ describe('exporting theses', () => {
     assert.match(res.headers.get('content-disposition'), /attachment; filename="theses-\d{4}-\d{2}-\d{2}\.csv"/);
 
     const rows = parseCsv(res.data);
-    assert.deepEqual(rows[0], ['Title', 'Students', 'Program', 'Adviser', 'Current stage', 'Stages approved', 'Status', 'Keywords', 'Started', 'Last updated']);
+    assert.deepEqual(rows[0], ['Title', 'Students', 'Program', 'Adviser', 'Current stage', 'Stages approved', 'Status', 'Term', 'Next due', 'Overdue', 'Keywords', 'Started', 'Last updated']);
 
     const crop = rows.find((r) => r[0] === 'Crop disease detection');
     assert.equal(crop[1], 'Ana Export');

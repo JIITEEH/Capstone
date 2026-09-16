@@ -147,6 +147,19 @@ Leaders invite; classmates join by choosing **Accept** on their My Thesis page. 
    `thesisController.js` → `inviteMember`, `cancelInvitation`; client `ui-pieces/thesis/GroupMembers.jsx`
    and `GroupInvitations.jsx`.
 
+### "A thesis shows no deadline" or "A group is overdue when it shouldn't be"
+
+Deadlines come from the thesis's term. Admins manage terms on the **Terms** page.
+
+1. No deadline? The thesis has no term (theses created before terms existed don't), or its term has no
+   due date left for a stage the group hasn't submitted. Pick a term under **Admin controls** on the thesis.
+2. New theses join the **current** term. If none is current, they get no term.
+3. Overdue means: that stage's due date has passed and the group has submitted nothing for it. A submission
+   waiting for review counts as submitted.
+4. Off by a day? The server decides when a day ends. Set `TZ` to the school's time zone; see `DEPLOYMENT.md`.
+5. Code: `server/src/database-queries/thesisModel.js` (`NEXT_DEADLINE`), `termModel.js` → `deadlinesForThesis`,
+   `request-handlers/termController.js`; client `screens/admin/Terms.jsx`, `ui-pieces/thesis/Deadlines.jsx`.
+
 ### "Everyone was signed out after a password change"
 
 Expected. Changing, resetting, or having an admin set a password ends every session for that account,

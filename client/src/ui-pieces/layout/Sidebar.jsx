@@ -3,6 +3,7 @@ import {
   BookOpen,
   CalendarDays,
   CalendarPlus,
+  CalendarRange,
   LayoutDashboard,
   Library,
   LogOut,
@@ -30,6 +31,7 @@ const NAV_BY_ROLE = {
     { to: '/theses', label: 'All Theses', icon: Library },
     { to: '/schedule', label: 'Schedule', icon: CalendarDays },
     { to: '/users', label: 'Users', icon: Users },
+    { to: '/terms', label: 'Terms', icon: CalendarRange },
     { to: '/audit', label: 'Audit log', icon: ScrollText },
   ],
 };

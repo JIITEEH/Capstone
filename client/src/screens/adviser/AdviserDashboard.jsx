@@ -101,7 +101,7 @@ export default function AdviserDashboard() {
                 name: thesis.student_name,
                 lead: 'Working on',
                 detail: thesis.title,
-                status: thesisStatusPill(thesis.status),
+                status: thesis.next_due_days_left < 0 ? { label: 'Overdue', tone: 'waiting' } : thesisStatusPill(thesis.status),
                 to: `/theses/${thesis.id}`,
               }))}
               emptyIcon={Users}

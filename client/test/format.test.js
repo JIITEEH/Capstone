@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   approvedStageKeys,
+  dueLabel,
+  dueTone,
+  formatDay,
   formatBytes,
   formatDuration,
   initials,
@@ -19,6 +22,30 @@ describe('parseDate', () => {
     assert.equal(parseDate('2026-09-15T08:30:00Z').toISOString(), '2026-09-15T08:30:00.000Z');
     assert.equal(parseDate(''), null);
     assert.equal(parseDate(null), null);
+  });
+});
+
+describe('due dates', () => {
+  it('shows a calendar day on that same day, whatever the time zone', () => {
+    assert.match(formatDay('2026-10-01'), /1/);
+    assert.doesNotMatch(formatDay('2026-10-01'), /30/);
+    assert.equal(formatDay(''), '—');
+    assert.equal(formatDay('2026-10-01 08:00:00'), '—');
+  });
+
+  it('describes how far off a deadline is', () => {
+    assert.equal(dueLabel(5), 'Due in 5 days');
+    assert.equal(dueLabel(1), 'Due tomorrow');
+    assert.equal(dueLabel(0), 'Due today');
+    assert.equal(dueLabel(-1), 'Overdue by 1 day');
+    assert.equal(dueLabel(-3), 'Overdue by 3 days');
+  });
+
+  it('turns amber within a week and red once overdue', () => {
+    assert.equal(dueTone(8), 'neutral');
+    assert.equal(dueTone(7), 'warning');
+    assert.equal(dueTone(0), 'warning');
+    assert.equal(dueTone(-1), 'danger');
   });
 });
 

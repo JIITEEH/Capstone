@@ -45,7 +45,7 @@ function adviserDashboard(user) {
 
 function adminDashboard() {
   return {
-    stats: Stats.overview(),
+    stats: { ...Stats.overview(), overdue: Thesis.list({ overdue: true }).length },
     statusBreakdown: Stats.statusBreakdown(),
     advisers: User.listAdvisers(),
     unassigned: Thesis.list({ unassigned: true }).slice(0, 5),

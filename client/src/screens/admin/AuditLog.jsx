@@ -24,6 +24,7 @@ const ACTIONS = {
   'thesis.adviser_assigned': 'assigned an adviser',
   'thesis.adviser_removed': 'removed an adviser',
   'thesis.status_overridden': 'overrode a status',
+  'thesis.term_changed': 'moved a thesis to another term',
   'thesis.deleted': 'deleted a thesis',
   'thesis.defense_verdict': 'recorded a defense verdict',
 };

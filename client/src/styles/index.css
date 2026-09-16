@@ -2172,6 +2172,69 @@ a.bar-row:hover .bar-label {
   color: var(--text-muted);
 }
 
+/* Stage due dates on the thesis page */
+.deadlines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.deadline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.deadline-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 6px 14px;
+  font-size: 14px;
+}
+
+.deadline-stage {
+  font-weight: 500;
+}
+
+.due-note.due-danger {
+  color: var(--danger-text);
+  font-weight: 500;
+}
+
+.due-note.due-warning {
+  color: var(--warning-text);
+}
+
+@media (max-width: 640px) {
+  .deadline-list {
+    gap: 14px;
+  }
+
+  .deadline-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .deadline-stage {
+    grid-column: 1 / -1;
+  }
+}
+
+.term-deadlines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
 .group-adviser {
   margin-top: 16px;
   padding-top: 16px;

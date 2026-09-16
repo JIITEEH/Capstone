@@ -5,6 +5,7 @@ import { ThesisStatusBadge } from '../ui-pieces/basics/Badge.jsx';
 import { EmptyState, LoadState, Spinner } from '../ui-pieces/basics/Feedback.jsx';
 import PageHeader from '../ui-pieces/basics/PageHeader.jsx';
 import { ProgressBar } from '../ui-pieces/basics/StageTracker.jsx';
+import { DueNote } from '../ui-pieces/thesis/DueBadge.jsx';
 import { useAuth } from '../shared-state/AuthContext.jsx';
 import { useToast } from '../shared-state/ToastContext.jsx';
 import useApi from '../reusable-logic/useApi.js';
@@ -19,6 +20,8 @@ export default function ThesesList() {
   const [params, setParams] = useSearchParams();
   const status = params.get('status') ?? '';
   const adviser = params.get('adviser') ?? '';
+  const term = params.get('term') ?? '';
+  const deadline = params.get('deadline') ?? '';
 
   // The topbar search arrives as ?q=
   const query = params.get('q') ?? '';
@@ -33,10 +36,11 @@ export default function ThesesList() {
   }, [searchInput]);
 
   const { data: theses, loading, error } = useApi(
-    () => api.listTheses({ status, adviser: isAdmin ? adviser : '', search }),
-    [status, adviser, search, isAdmin],
+    () => api.listTheses({ status, adviser: isAdmin ? adviser : '', term: isAdmin ? term : '', deadline, search }),
+    [status, adviser, term, deadline, search, isAdmin],
   );
   const { data: advisers } = useApi(() => (isAdmin ? api.listAdvisers() : Promise.resolve([])), [isAdmin]);
+  const { data: terms } = useApi(() => (isAdmin ? api.listTerms() : Promise.resolve([])), [isAdmin]);
 
   function setFilter(key, value) {
     const next = new URLSearchParams(params);
@@ -45,7 +49,7 @@ export default function ThesesList() {
     setParams(next, { replace: true });
   }
 
-  const hasFilters = Boolean(status || adviser || search);
+  const hasFilters = Boolean(status || adviser || term || deadline || search);
 
   const toast = useToast();
   const [exporting, setExporting] = useState(false);
@@ -54,7 +58,7 @@ export default function ThesesList() {
   async function exportCsv() {
     setExporting(true);
     try {
-      await api.exportTheses({ status, adviser, search });
+      await api.exportTheses({ status, adviser, term, deadline, search });
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -108,6 +112,21 @@ export default function ThesesList() {
               ))}
             </select>
           )}
+          {isAdmin && terms?.length > 0 && (
+            <select className="input" value={term} onChange={(e) => setFilter('term', e.target.value)} aria-label="Filter by term">
+              <option value="">All terms</option>
+              {terms.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+              <option value="none">No term</option>
+            </select>
+          )}
+          <select className="input" value={deadline} onChange={(e) => setFilter('deadline', e.target.value)} aria-label="Filter by deadline">
+            <option value="">Any deadline</option>
+            <option value="overdue">Overdue</option>
+          </select>
           {loading && theses && <Spinner size={18} />}
         </div>
 
@@ -154,6 +173,7 @@ export default function ThesesList() {
                     )}
                     <td data-label="Progress">
                       <ProgressBar value={thesis.approved_stages} max={STAGES.length} />
+                      <DueNote thesis={thesis} />
                     </td>
                     <td data-label="Status">
                       <ThesisStatusBadge status={thesis.status} />

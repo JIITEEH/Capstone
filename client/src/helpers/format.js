@@ -9,6 +9,29 @@ export function formatDate(value) {
   return date ? date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 }
 
+// A calendar day stored as YYYY-MM-DD, such as a due date. Read as a local date, so it never
+// shifts to the day before in time zones behind UTC.
+export function formatDay(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value ?? '')) return '—';
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// How far off a due date is, from the whole days left that the API counts
+export function dueLabel(daysLeft) {
+  if (daysLeft < 0) return `Overdue by ${plural(-daysLeft, 'day')}`;
+  if (daysLeft === 0) return 'Due today';
+  if (daysLeft === 1) return 'Due tomorrow';
+  return `Due in ${daysLeft} days`;
+}
+
+// Badge tone for a due date: red once overdue, amber within a week
+export function dueTone(daysLeft) {
+  if (daysLeft < 0) return 'danger';
+  if (daysLeft <= 7) return 'warning';
+  return 'neutral';
+}
+
 export function formatDateTime(value) {
   const date = parseDate(value);
   return date

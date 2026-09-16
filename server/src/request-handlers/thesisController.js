@@ -6,6 +6,7 @@ import * as Invitation from '../database-queries/invitationModel.js';
 import * as Notification from '../database-queries/notificationModel.js';
 import * as Schedule from '../database-queries/scheduleModel.js';
 import * as Submission from '../database-queries/submissionModel.js';
+import * as Term from '../database-queries/termModel.js';
 import * as Thesis from '../database-queries/thesisModel.js';
 import * as User from '../database-queries/userModel.js';
 import { canManageGroup, getAccessibleThesis, withSchedulePermissions } from '../permission-rules/access.js';
@@ -26,7 +27,9 @@ function readThesisFields(body, { partial }) {
 function thesisFilters(req) {
   const { user } = req;
   const status = THESIS_STATUSES[req.query.status] ? req.query.status : undefined;
-  const filters = { status, search: queryString(req.query.search) };
+  const filters = { status, search: queryString(req.query.search), overdue: req.query.deadline === 'overdue' };
+  if (req.query.term === 'none') filters.termId = 'none';
+  else if (Number(req.query.term) > 0) filters.termId = Number(req.query.term);
 
   if (user.role === 'student') filters.studentId = user.id;
   if (user.role === 'adviser') filters.adviserId = user.id;
@@ -58,6 +61,9 @@ export function exportTheses(req, res) {
       { header: 'Current stage', value: currentStage },
       { header: 'Stages approved', value: (t) => `${t.approved_stages} of ${Object.keys(STAGES).length}` },
       { header: 'Status', value: (t) => THESIS_STATUSES[t.status] ?? t.status },
+      { header: 'Term', value: (t) => t.term_name ?? '' },
+      { header: 'Next due', value: (t) => (t.next_due_stage ? `${STAGES[t.next_due_stage]}, ${t.next_due_on}` : '') },
+      { header: 'Overdue', value: (t) => (t.next_due_days_left < 0 ? 'Yes' : '') },
       { header: 'Keywords', value: (t) => t.keywords },
       { header: 'Started', value: (t) => t.created_at },
       { header: 'Last updated', value: (t) => t.updated_at },
@@ -75,7 +81,7 @@ export function createThesis(req, res) {
 
   const fields = readThesisFields(req.body ?? {}, { partial: false });
   const thesis = transaction(() => {
-    const created = Thesis.create({ studentId: req.user.id, ...fields });
+    const created = Thesis.create({ studentId: req.user.id, termId: Term.findCurrent()?.id ?? null, ...fields });
     Activity.log(created.id, req.user.id, 'created the thesis');
     return created;
   });
@@ -89,6 +95,7 @@ export function getThesis(req, res) {
     members: Thesis.listMembers(thesis.id),
     groupLimit: MAX_GROUP_SIZE,
     invitations: Invitation.listPendingForThesis(thesis.id),
+    deadlines: Term.deadlinesForThesis(thesis.id),
     submissions: Submission.listByThesis(thesis.id),
     schedules: Schedule.list({ thesisId: thesis.id, range: 'upcoming' }).map((event) =>
       withSchedulePermissions(req.user, event),
@@ -177,6 +184,34 @@ export function updateStatus(req, res) {
         details: `${THESIS_STATUSES[thesis.status]} → ${THESIS_STATUSES[status]}`,
       });
     }
+    return result;
+  });
+  res.json(updated);
+}
+
+// Admins move a thesis to another term, or out of every term, which changes its deadlines
+export function setTerm(req, res) {
+  const thesis = getAccessibleThesis(req.user, req.params.id);
+  const rawId = req.body?.termId;
+
+  let term = null;
+  if (rawId !== null && rawId !== undefined && rawId !== '') {
+    term = Term.findById(Number(rawId));
+    if (!term) throw new HttpError(400, 'Choose a term that exists');
+  }
+  if ((term?.id ?? null) === thesis.term_id) return res.json(thesis);
+
+  const updated = transaction(() => {
+    const result = Thesis.update(thesis.id, { term_id: term?.id ?? null });
+    Activity.log(thesis.id, req.user.id, term ? `moved the thesis to ${term.name}` : 'removed the thesis from its term');
+    Audit.record({
+      actor: req.user,
+      action: 'thesis.term_changed',
+      targetType: 'thesis',
+      targetId: thesis.id,
+      targetLabel: thesis.title,
+      details: `${thesis.term_name ?? 'No term'} → ${term?.name ?? 'No term'}`,
+    });
     return result;
   });
   res.json(updated);

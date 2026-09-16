@@ -8,6 +8,7 @@ import defenseRoutes from './defenseRoutes.js';
 import notificationRoutes from './notificationRoutes.js';
 import scheduleRoutes from './scheduleRoutes.js';
 import searchRoutes from './searchRoutes.js';
+import termRoutes from './termRoutes.js';
 import submissionRoutes from './submissionRoutes.js';
 import thesisRoutes from './thesisRoutes.js';
 import userRoutes from './userRoutes.js';
@@ -29,5 +30,6 @@ router.use('/notifications', requireAuth, notificationRoutes);
 router.use('/invitations', requireAuth, requireRole('student'), invitationRoutes);
 router.use('/users', requireAuth, requireRole('admin'), userRoutes);
 router.use('/audit', requireAuth, requireRole('admin'), auditRoutes);
+router.use('/terms', requireAuth, requireRole('admin'), termRoutes);
 
 export default router;

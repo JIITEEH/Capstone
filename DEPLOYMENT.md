@@ -49,6 +49,7 @@ cp server/.env.example server/.env
 | `BACKUP_DIR` | `./backups` | Where nightly backups are written |
 | `BACKUP_KEEP_DAYS` | `14` | How long backups are kept |
 | `BACKUP_REMOTE` | `gdrive:thesistrack-backups` | Copies backups off the server. See section 9 |
+| `TZ` | `Asia/Manila` | The school's time zone. Stage due dates pass at midnight here. Set it in the systemd unit (section 6) |
 
 ### Why `TRUST_PROXY` matters
 
@@ -118,6 +119,8 @@ WorkingDirectory=/home/thesistrack/thesistrack
 ExecStart=/usr/bin/npm start
 Restart=on-failure
 User=thesistrack
+# Deadlines roll over at midnight in this time zone. Use the school's, not the server host's default.
+Environment=TZ=Asia/Manila
 
 [Install]
 WantedBy=multi-user.target

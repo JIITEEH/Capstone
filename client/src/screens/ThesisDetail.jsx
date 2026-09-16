@@ -4,6 +4,8 @@ import { CalendarPlus, ChevronLeft, ChevronRight, FileText, MessageSquare, Penci
 import ScheduleForm from '../ui-pieces/schedule/ScheduleForm.jsx';
 import ScheduleList from '../ui-pieces/schedule/ScheduleList.jsx';
 import AdminControls from '../ui-pieces/thesis/AdminControls.jsx';
+import Deadlines from '../ui-pieces/thesis/Deadlines.jsx';
+import DueBadge from '../ui-pieces/thesis/DueBadge.jsx';
 import GroupMembers from '../ui-pieces/thesis/GroupMembers.jsx';
 import SubmissionForm from '../ui-pieces/thesis/SubmissionForm.jsx';
 import ThesisForm from '../ui-pieces/thesis/ThesisForm.jsx';
@@ -44,7 +46,7 @@ export default function ThesisDetail({ thesisId, onLeft }) {
   const [modal, setModal] = useState(null);
 
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
-  const { thesis, members, invitations, groupLimit, submissions, schedules, activity } = data;
+  const { thesis, members, invitations, deadlines, groupLimit, submissions, schedules, activity } = data;
 
   const isStudent = user.role === 'student';
   const isAdmin = user.role === 'admin';
@@ -83,6 +85,8 @@ export default function ThesisDetail({ thesisId, onLeft }) {
           <span className="header-meta">
             <ThesisStatusBadge status={thesis.status} />
             <span>Started {formatDate(thesis.created_at)}</span>
+            {thesis.term_name && <span>{thesis.term_name}</span>}
+            <DueBadge thesis={thesis} />
           </span>
         }
         actions={
@@ -130,6 +134,7 @@ export default function ThesisDetail({ thesisId, onLeft }) {
                 <StageTracker approvedKeys={approved} />
               </div>
             </div>
+            <Deadlines termName={thesis.term_name} deadlines={deadlines} />
           </section>
 
           <section className="card">

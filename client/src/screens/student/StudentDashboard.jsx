@@ -12,12 +12,21 @@ import { useAuth } from '../../shared-state/AuthContext.jsx';
 import useApi from '../../reusable-logic/useApi.js';
 import { api } from '../../api-client/api.js';
 import { STAGE_LABELS, STAGES, THESIS_STATUS } from '../../helpers/constants.js';
-import { approvedStageKeys, greeting, timeAgo } from '../../helpers/format.js';
+import { approvedStageKeys, dueLabel, greeting, timeAgo } from '../../helpers/format.js';
 
 const FEEDBACK_PILLS = {
   approved: { label: 'Approved', tone: 'done' },
   revisions_requested: { label: 'Revisions', tone: 'waiting' },
 };
+
+// "Chapters 1–3 is due in 5 days." when a due date is close or has passed
+function deadlineNote(thesis) {
+  if (!thesis.next_due_on || thesis.next_due_days_left > 14) return '';
+  const stage = STAGES.find((s) => s.key === thesis.next_due_stage)?.label;
+  const days = thesis.next_due_days_left;
+  if (days < 0) return ` ${stage} is overdue. Submit it as soon as you can.`;
+  return ` ${stage} is ${dueLabel(days).replace(/^Due/, 'due')}.`;
+}
 
 function bannerMessage(thesis, approved) {
   if (thesis.status === 'completed') return 'Every stage of your thesis is approved. Congratulations on finishing!';
@@ -38,6 +47,7 @@ function stageItems(thesis, approved, currentKey) {
     let meta = `Unlocks after ${STAGES[index - 1]?.label}`;
     if (approved.includes(stage.key)) meta = 'Approved by your adviser';
     else if (stage.key === currentKey) meta = `Current stage · ${THESIS_STATUS[thesis.status].label}`;
+    if (stage.key === thesis.next_due_stage) meta += ` · ${dueLabel(thesis.next_due_days_left)}`;
     return { key: stage.key, ...STAGE_GLYPHS[stage.key], title: stage.label, meta, to: '/thesis' };
   });
 }
@@ -87,7 +97,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="dashboard">
-      <DashboardHeader subtitle={`${greeting()}, ${firstName}. ${bannerMessage(thesis, approved)}`}>
+      <DashboardHeader subtitle={`${greeting()}, ${firstName}. ${bannerMessage(thesis, approved)}${deadlineNote(thesis)}`}>
         <Link to="/thesis" className="btn btn-primary btn-lg">
           <Plus size={20} />
           Submit Work

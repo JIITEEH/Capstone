@@ -23,7 +23,10 @@ function summary(stats) {
   const parts = [];
   if (stats.unassigned) parts.push(stats.unassigned === 1 ? '1 thesis needs an adviser' : `${stats.unassigned} theses need an adviser`);
   if (stats.pending_reviews) parts.push(`${plural(stats.pending_reviews, 'submission')} awaiting review`);
-  return parts.length ? `${parts.join(' and ')}.` : 'Everything is running smoothly.';
+  if (stats.overdue) parts.push(stats.overdue === 1 ? '1 thesis is past a deadline' : `${stats.overdue} theses are past a deadline`);
+  if (!parts.length) return 'Everything is running smoothly.';
+  const last = parts.pop();
+  return `${parts.length ? `${parts.join(', ')} and ${last}` : last}.`;
 }
 
 export default function AdminDashboard() {
