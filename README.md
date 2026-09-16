@@ -17,7 +17,7 @@ npm run dev                            # run the API and the website together
 
 Open http://localhost:5173. The API runs at http://localhost:3001/api.
 
-> If you pulled a change to the database schema, the server applies it on the next start and keeps your data. Watch for a line like `Database upgraded: applied 005_add_notifications.sql`.
+> If you pulled a change to the database schema, the server applies it on the next start and keeps your data. Watch for a line like `Database upgraded: applied 009_add_terms.sql`.
 
 ### Demo accounts
 
@@ -95,6 +95,11 @@ erDiagram
     users ||--o{ schedule_panelists : "sits on"
     theses ||--o{ activity : "logs"
     users ||--o{ password_resets : "requests"
+    users ||--o{ notifications : "receives"
+    users ||--o{ audit_log : "acts in (admin)"
+    schedules ||--o{ defense_evaluations : "scored in"
+    users ||--o{ defense_evaluations : "scores (panelist)"
+    schedules ||--o| defense_verdicts : "decided by"
 
     users {
         int id PK
@@ -103,6 +108,7 @@ erDiagram
         text role "student | adviser | admin"
         text program
         int is_active
+        int token_version "raised on every password change"
     }
     theses {
         int id PK
@@ -160,6 +166,40 @@ erDiagram
         text token_hash UK
         text expires_at
     }
+    notifications {
+        int id PK
+        int user_id FK
+        int actor_id FK
+        text type
+        text title
+        text link
+        text read_at
+    }
+    audit_log {
+        int id PK
+        int actor_id FK
+        text actor_name
+        text action
+        text target_type "user | thesis"
+        text target_label
+        text details
+    }
+    defense_evaluations {
+        int id PK
+        int schedule_id FK
+        int panelist_id FK
+        int content "1-5"
+        int methodology "1-5"
+        int presentation "1-5"
+        int answers "1-5"
+        text remarks
+    }
+    defense_verdicts {
+        int schedule_id PK,FK
+        text verdict "passed | passed_with_revisions | failed"
+        text notes
+        text recorded_by_name
+    }
 ```
 
 - **Foreign keys** are enforced (`PRAGMA foreign_keys = ON`). Deleting a thesis cascades to its submissions, reviews, comments, schedules, and activity.
@@ -167,8 +207,12 @@ erDiagram
 - **`schedule_panelists`** is a join table for the many-to-many link between defenses and advisers.
 - **`thesis_members`** links students to their thesis group. `student_id` is unique, so a student belongs to at most one thesis, and a partial unique index allows only one leader per group. Deleting a student removes them from their group; if they were the last member, the thesis is deleted too.
 - **`submission_details`** is a view that joins each submission with its review. A submission's status (`pending`, `approved`, `revisions_requested`) comes from its review, so status is never stored twice.
-- **`password_resets`** holds one-time reset links. Only a SHA-256 hash of each token is stored. A link expires after 1 hour and is deleted once used. No email service is set up yet, so outside production the reset link is printed in the server console and shown on the "Forgot password" page.
-- **Changing the schema:** add the next numbered file to `server/src/database/migrations/` (for example `005_add_notifications.sql`). On the next start the server applies every migration above the database's current `PRAGMA user_version`, each in its own transaction, so a failed migration leaves the database on its last good version. Existing accounts, theses, and uploads are kept.
+- **`password_resets`** holds one-time reset links. Only a SHA-256 hash of each token is stored. A link expires after 1 hour and is deleted once used. The link is emailed over SMTP (see `DEPLOYMENT.md`); outside production it is also shown on the "Forgot password" page so the flow works without a mail server.
+- **`users.token_version`** ends sessions when a password changes. Each sign-in token records it, and every password change raises it, so older tokens are refused.
+- **`notifications`** holds one row per recipient, so each person reads and dismisses their own copy. Nobody is notified about their own action, and each notification is written in the same transaction as the event it describes.
+- **`audit_log`** records admin changes to accounts and theses. Names are copied in at the time, so an entry outlives the user or admin it mentions. The app never edits or deletes an entry.
+- **`defense_evaluations`** and **`defense_verdicts`** record how a defense went: each panelist's scores and remarks, then the single verdict. Panelists can't see each other's scores until the verdict is recorded, which also locks them.
+- **Changing the schema:** add the next numbered file to `server/src/database/migrations/` (for example `009_add_terms.sql`). On the next start the server applies every migration above the database's current `PRAGMA user_version`, each in its own transaction, so a failed migration leaves the database on its last good version. Existing accounts, theses, and uploads are kept.
 - **Never edit a migration that has already run.** It has executed on real databases; correct it with a new file instead.
 - **`npm run db:seed` is for demo data only.** It deletes the database and every upload, and refuses to run when `NODE_ENV=production` unless `SEED_ALLOW_PRODUCTION=yes` is set.
 

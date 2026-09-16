@@ -90,8 +90,8 @@ That is deliberate: people outside a thesis get 404, never 403, so they cannot c
 
 ### "I changed the schema"
 
-1. Add the next numbered file to `server/src/database/migrations/`, e.g. `005_add_notifications.sql`.
-2. Restart. The server applies it and prints `Database upgraded: applied 005_...`.
+1. Add the next numbered file to `server/src/database/migrations/`, e.g. `009_add_terms.sql`. Check the folder for the highest number first.
+2. Restart. The server applies it and prints `Database upgraded: applied 009_...`.
 3. **Do not run `npm run db:seed` to apply a schema change** — it deletes every account, thesis, and upload. It is for demo data only.
 4. Update the matching query file in `database-queries/` and the ER diagram in `README.md`.
 
@@ -100,11 +100,53 @@ That is deliberate: people outside a thesis get 404, never 403, so they cannot c
 `server/src/request-filters/rateLimit.js`. Limits count failures per account, not per network, so a
 full computer lab is never locked out together. Restarting the server clears the counters.
 
-### "The notification bell is empty"
+### "A notification didn't arrive" or "the bell count looks wrong"
 
-Expected today. It only lists upcoming consultations and defenses — see
-`client/src/ui-pieces/layout/Notifications.jsx`. Reviews, comments, and group changes produce no
-alert yet; that is finding A2 on the roadmap.
+1. **You never get notified about your own action.** Submitting, reviewing, or commenting tells the
+   other people involved, not you. That is deliberate.
+2. `server/src/database-queries/notificationModel.js` — `notify` decides recipients; `thesisParticipants`
+   is the students plus the adviser.
+3. Each event notifies from its handler: submissions and group changes in `request-handlers/thesisController.js`,
+   reviews and comments in `submissionController.js`, events in `scheduleController.js`, verdicts in
+   `defenseController.js`. Search for `Notification.notify`.
+4. A refused action (400, 403, 409) sends nothing, because the notification is in the same transaction.
+5. The bell refreshes every 60 seconds while the tab is visible — `client/src/ui-pieces/layout/Notifications.jsx`.
+
+### "Password reset emails never arrive"
+
+1. Check the server log for `Could not email`. The line after it says why.
+2. `SMTP_HOST` unset in `server/.env` means nothing is sent. In development the email is printed to the
+   console instead; in production the server warns at startup.
+3. With Gmail, `SMTP_PASS` must be an **app password**, not the account password. See `DEPLOYMENT.md`, section 4.
+4. Look in spam. The request page answers the same way whether or not the email exists or sent, on purpose.
+5. Code: `server/src/helpers/email.js`, called from `request-handlers/authController.js` → `forgotPassword`.
+
+### "Everyone was signed out after a password change"
+
+Expected. Changing, resetting, or having an admin set a password ends every session for that account,
+so a stolen session can't outlive it. The device that made the change stays signed in. See
+`server/src/request-filters/auth.js` (the `token_version` check) and `database-queries/userModel.js` → `setPassword`.
+
+### "I can't score a defense" or "the Record verdict button is missing"
+
+All in `server/src/request-handlers/defenseController.js`:
+
+1. Scoring opens only **once the defense has started**. Before then the page says when.
+2. Only **panelists on that defense** can score. The thesis's own adviser is never on its panel.
+3. Once the **verdict is recorded**, scores are locked for good.
+4. The verdict button appears only for an **admin**, after **at least one** panelist has scored.
+5. A **cancelled** defense can't be scored or decided.
+
+### "Who changed this account or thesis?"
+
+Admins: **Audit log** in the sidebar. It lists role changes, deactivations, deleted accounts, adviser
+assignments, status overrides, deleted theses, and defense verdicts, with who did it and when.
+Code: `server/src/database-queries/auditModel.js`; each admin handler calls `Audit.record`.
+
+### "A CSV export shows a quote before a value"
+
+Expected for values starting with `=`, `+`, `-`, or `@`. A spreadsheet would run those as formulas,
+so the export turns them into plain text. See `server/src/helpers/csv.js`.
 
 ### "Tests or CI are failing"
 
