@@ -48,7 +48,7 @@ A Thesis Management System with three roles: Student, Adviser, and Admin.
 ## Database rules
 
 - The database is relational SQLite. Keep data normalized: a submission's status comes from the `reviews` table through the `submission_details` view, so don't add a status column back to `submissions`.
-- **Never edit an applied migration.** Files in `server/src/database/migrations/` are a history: once a file has run on any database, changing it means databases disagree about their shape. To change the schema, add the next numbered file, for example `005_add_notifications.sql`.
+- **Never edit an applied migration.** Files in `server/src/database/migrations/` are a history: once a file has run on any database, changing it means databases disagree about their shape. To change the schema, add the next numbered file after the highest one in the folder, for example `009_add_terms.sql`.
 - A migration must upgrade an existing database in place (`ALTER TABLE`, `CREATE TABLE`, backfill with `UPDATE`). Never write one that drops and recreates a table holding real data.
 - After adding a migration, update `server/src/database/seed.js` and the ER diagram in `README.md` to match.
 - `npm run db:seed` deletes the database and all uploads. It is for demo data only, never for applying a schema change.
