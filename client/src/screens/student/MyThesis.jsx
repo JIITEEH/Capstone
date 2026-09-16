@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { MailCheck } from 'lucide-react';
+import GroupInvitations from '../../ui-pieces/thesis/GroupInvitations.jsx';
 import ThesisForm from '../../ui-pieces/thesis/ThesisForm.jsx';
 import { EmptyState, LoadState } from '../../ui-pieces/basics/Feedback.jsx';
 import PageHeader from '../../ui-pieces/basics/PageHeader.jsx';
@@ -37,7 +38,7 @@ function VerifyFirst({ email, devVerifyUrl }) {
         message={
           sent
             ? sent.message
-            : `We sent a link to ${email}. Open it to confirm the address is yours. Until then you can't start a thesis or be added to a group.`
+            : `We sent a link to ${email}. Open it to confirm the address is yours. Until then you can't start a thesis or be invited to a group.`
         }
         action={
           <button type="button" className="btn btn-secondary" onClick={resend} disabled={busy}>
@@ -63,6 +64,7 @@ export default function MyThesis() {
   const { user } = useAuth();
   const location = useLocation();
   const { data: theses, loading, error, reload } = useApi(() => api.listTheses(), []);
+  const invites = useApi(() => api.listMyInvitations(), []);
 
   if (!theses) return <LoadState loading={loading} error={error} />;
   // Leaving the group reloads this page, which then offers to start a new thesis
@@ -81,17 +83,22 @@ export default function MyThesis() {
     <>
       <PageHeader
         title="Start your thesis"
-        subtitle="Add the basic details now. You'll lead the group and can add classmates afterwards. Already part of a group? Ask your group leader to add you by email."
+        subtitle="Add the basic details now. You'll lead the group and can invite classmates afterwards. Joining someone else's group? Ask the group leader to invite you by email, then accept it here."
       />
-      <section className="card form-card">
-        <ThesisForm
-          submitLabel="Create thesis"
-          onSubmit={async (values) => {
-            await api.createThesis(values);
-            await reload();
-          }}
-        />
-      </section>
+      <div className="stack">
+        {invites.data?.length > 0 && (
+          <GroupInvitations invitations={invites.data} onJoined={reload} onChanged={invites.reload} />
+        )}
+        <section className="card form-card">
+          <ThesisForm
+            submitLabel="Create thesis"
+            onSubmit={async (values) => {
+              await api.createThesis(values);
+              await reload();
+            }}
+          />
+        </section>
+      </div>
     </>
   );
 }

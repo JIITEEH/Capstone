@@ -15,6 +15,8 @@ let outsider;
 let extras;
 let thesisId;
 
+const invite = (token, email) => api.post(`/theses/${thesisId}/invitations`, { token, body: { email } });
+const accept = (student, invitationId) => api.post(`/invitations/${invitationId}/accept`, { token: student.token });
 const addMember = (token, email) => api.post(`/theses/${thesisId}/members`, { token, body: { email } });
 const removeMember = (token, studentId) => api.delete(`/theses/${thesisId}/members/${studentId}`, { token });
 const members = async (token) => (await api.get(`/theses/${thesisId}`, { token })).data.members;
@@ -44,43 +46,53 @@ describe('starting a group', () => {
 });
 
 describe('adding members', () => {
-  it('lets the leader add a classmate by email', async () => {
-    const res = await addMember(leader.token, 'ben@tms.edu');
+  it('lets the leader invite a classmate, who joins by accepting', async () => {
+    const res = await invite(leader.token, 'ben@tms.edu');
     assert.equal(res.status, 201);
-    assert.equal(res.data.length, 2);
+    assert.equal((await members(leader.token)).length, 1, 'an invitation alone does not add anyone');
+
+    assert.equal((await accept(ben, res.data.id)).status, 200);
+    assert.equal((await members(leader.token)).length, 2);
   });
 
-  it('stops other members and outsiders from adding people', async () => {
-    assert.equal((await addMember(ben.token, 'cara@tms.edu')).status, 403);
-    assert.equal((await addMember(outsider.token, 'cara@tms.edu')).status, 404);
+  it('stops other members and outsiders from inviting people', async () => {
+    assert.equal((await invite(ben.token, 'cara@tms.edu')).status, 403);
+    assert.equal((await invite(outsider.token, 'cara@tms.edu')).status, 404);
   });
 
-  it('only adds active student accounts that exist', async () => {
-    assert.equal((await addMember(leader.token, 'santos@tms.edu')).status, 400);
-    assert.equal((await addMember(leader.token, 'nobody@tms.edu')).status, 400);
+  it('only invites active student accounts that exist', async () => {
+    assert.equal((await invite(leader.token, 'santos@tms.edu')).status, 400);
+    assert.equal((await invite(leader.token, 'nobody@tms.edu')).status, 400);
   });
 
-  it('refuses people already in this or another group', async () => {
-    const again = await addMember(leader.token, 'ben@tms.edu');
+  it('refuses to invite someone already in this group', async () => {
+    const again = await invite(leader.token, 'ben@tms.edu');
     assert.equal(again.status, 409);
     assert.match(again.data.error, /already in this group/);
+  });
+
+  it('leaves adding members directly to admins, who are told about other groups', async () => {
+    assert.equal((await addMember(leader.token, 'cara@tms.edu')).status, 403);
+    assert.equal((await addMember(admin.token, 'cara@tms.edu')).status, 201);
 
     const other = await api.post('/theses', { token: outsider.token, body: { title: 'Omar Thesis' } });
-    const taken = await api.post(`/theses/${other.data.id}/members`, { token: outsider.token, body: { email: 'ben@tms.edu' } });
+    const taken = await api.post(`/theses/${other.data.id}/members`, { token: admin.token, body: { email: 'ben@tms.edu' } });
     assert.equal(taken.status, 409);
     assert.match(taken.data.error, /another thesis group/);
   });
 
-  it('lets admins add members too', async () => {
-    assert.equal((await addMember(admin.token, 'cara@tms.edu')).status, 201);
-  });
+  it('caps a group at five students, counting pending invitations', async () => {
+    const first = await invite(leader.token, 'extra1@tms.edu');
+    const second = await invite(leader.token, 'extra2@tms.edu');
+    assert.equal(first.status, 201);
+    assert.equal(second.status, 201);
 
-  it('caps a group at five students', async () => {
-    assert.equal((await addMember(leader.token, 'extra1@tms.edu')).status, 201);
-    assert.equal((await addMember(leader.token, 'extra2@tms.edu')).status, 201);
-    const sixth = await addMember(leader.token, 'extra3@tms.edu');
+    const sixth = await invite(leader.token, 'extra3@tms.edu');
     assert.equal(sixth.status, 400);
     assert.match(sixth.data.error, /at most 5/);
+
+    assert.equal((await accept(extras[0], first.data.id)).status, 200);
+    assert.equal((await accept(extras[1], second.data.id)).status, 200);
   });
 
   it('stops a member from starting a second thesis', async () => {

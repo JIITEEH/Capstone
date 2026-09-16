@@ -121,7 +121,7 @@ full computer lab is never locked out together. Restarting the server clears the
 4. Look in spam. The request page answers the same way whether or not the email exists or sent, on purpose.
 5. Code: `server/src/helpers/email.js`, called from `request-handlers/authController.js` → `forgotPassword`.
 
-### "A new student can't start a thesis" or "I can't add a classmate to my group"
+### "A new student can't start a thesis" or "I can't invite a classmate to my group"
 
 They haven't verified their email yet. Students who sign up must open the link in their verification
 email first. Accounts made by an admin don't need this.
@@ -131,7 +131,21 @@ email first. Accounts made by an admin don't need this.
 3. Sign-up refused with "Sign up with your school email address"? `ALLOWED_EMAIL_DOMAINS` in `server/.env`
    limits which domains may register.
 4. Code: `server/src/request-handlers/authController.js` → `register`, `verifyEmail`, `resendVerification`;
-   the checks in `thesisController.js` → `createThesis` and `addMember`.
+   the checks in `thesisController.js` → `createThesis`, `inviteMember`, and `addMember`.
+
+### "My classmate can't accept the group invitation" or "The invite button is gone"
+
+Leaders invite; classmates join by choosing **Accept** on their My Thesis page. Admins add students directly.
+
+1. "You're already in a thesis group": the classmate must leave their current group first. The leader is
+   never told this, on purpose, so leaders can't find out who is already taken.
+2. "This group already has 5 students": seats filled while the invitation was waiting, often by an admin.
+3. No invite form, or "full, counting invitations": pending invitations hold seats. Cancel stale ones with
+   the × next to the name marked **Invited**.
+4. Invitation not showing? It disappears once answered, cancelled, or when the classmate accepts another group.
+5. Code: `server/src/request-handlers/invitationController.js` (accept, decline),
+   `thesisController.js` → `inviteMember`, `cancelInvitation`; client `ui-pieces/thesis/GroupMembers.jsx`
+   and `GroupInvitations.jsx`.
 
 ### "Everyone was signed out after a password change"
 

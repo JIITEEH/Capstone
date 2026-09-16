@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LogOut, UserPlus, X } from 'lucide-react';
+import { LogOut, Mail, UserPlus, X } from 'lucide-react';
 import { useAuth } from '../../shared-state/AuthContext.jsx';
 import { useToast } from '../../shared-state/ToastContext.jsx';
 import { api } from '../../api-client/api.js';
@@ -7,9 +7,10 @@ import Avatar from '../basics/Avatar.jsx';
 import { Badge } from '../basics/Badge.jsx';
 import { ConfirmDialog } from '../basics/Modal.jsx';
 
-// Students in a thesis group. The leader and admins add classmates by email and remove members,
-// and any member can leave. The API enforces the same rules.
-export default function GroupMembers({ thesis, members, limit, onChanged, onLeft }) {
+// Students in a thesis group. The leader invites classmates by email, and they join once they accept.
+// Admins add students directly to fix a group. The leader and admins remove members, and any member
+// can leave. The API enforces the same rules.
+export default function GroupMembers({ thesis, members, invitations = [], limit, onChanged, onLeft }) {
   const { user } = useAuth();
   const toast = useToast();
   const [email, setEmail] = useState('');
@@ -18,12 +19,15 @@ export default function GroupMembers({ thesis, members, limit, onChanged, onLeft
   const [pending, setPending] = useState(null); // member chosen for removal, or yourself when leaving
   const [removing, setRemoving] = useState(false);
   const [removeError, setRemoveError] = useState('');
+  const [cancelling, setCancelling] = useState(null);
 
   const me = members.find((member) => member.id === user.id);
   const canManage = user.role === 'admin' || Boolean(me?.is_leader);
   // Completed theses are frozen for students; admins can still fix the group
   const editable = thesis.status !== 'completed' || user.role === 'admin';
-  const full = members.length >= limit;
+  const isAdmin = user.role === 'admin';
+  // Invitations still out hold a seat, so a leader can't invite past a full group
+  const full = members.length + (isAdmin ? 0 : invitations.length) >= limit;
   const leaving = pending?.id === user.id;
 
   async function handleAdd(event) {
@@ -31,14 +35,32 @@ export default function GroupMembers({ thesis, members, limit, onChanged, onLeft
     setAdding(true);
     setAddError('');
     try {
-      await api.addThesisMember(thesis.id, email);
+      if (isAdmin) {
+        await api.addThesisMember(thesis.id, email);
+        toast.success('Member added to the group');
+      } else {
+        await api.inviteThesisMember(thesis.id, email);
+        toast.success(`Invitation sent to ${email}`);
+      }
       setEmail('');
-      toast.success('Member added to the group');
       await onChanged();
     } catch (err) {
       setAddError(err.message);
     } finally {
       setAdding(false);
+    }
+  }
+
+  async function handleCancel(invitation) {
+    setCancelling(invitation.id);
+    try {
+      await api.cancelInvitation(thesis.id, invitation.id);
+      toast.success(`Invitation to ${invitation.student_name} cancelled`);
+      await onChanged();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setCancelling(null);
     }
   }
 
@@ -76,6 +98,7 @@ export default function GroupMembers({ thesis, members, limit, onChanged, onLeft
         <span className="person-label">Group</span>
         <span className="field-hint">
           {members.length} of {limit} students
+          {invitations.length > 0 && ` · ${invitations.length} invited`}
         </span>
       </div>
 
@@ -113,10 +136,37 @@ export default function GroupMembers({ thesis, members, limit, onChanged, onLeft
         })}
       </ul>
 
+      {invitations.length > 0 && (
+        <ul className="member-list invitation-list" aria-label="Waiting for a reply">
+          {invitations.map((invitation) => (
+            <li key={invitation.id} className="person member-row member-invited">
+              <Avatar name={invitation.student_name} />
+              <div>
+                <strong>{invitation.student_name}</strong>
+                <span className="muted">{invitation.student_email}</span>
+              </div>
+              <Badge tone="warning">Invited</Badge>
+              {canManage && (
+                <button
+                  type="button"
+                  className="icon-btn icon-btn-danger"
+                  aria-label={`Cancel the invitation to ${invitation.student_name}`}
+                  title="Cancel invitation"
+                  disabled={cancelling === invitation.id}
+                  onClick={() => handleCancel(invitation)}
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
       {canManage && editable && !full && (
         <form className="member-add" onSubmit={handleAdd}>
           <label htmlFor="add-member-email" className="person-label">
-            Add a classmate
+            {isAdmin ? 'Add a student' : 'Invite a classmate'}
           </label>
           <div className="inline-field">
             <input
@@ -129,15 +179,25 @@ export default function GroupMembers({ thesis, members, limit, onChanged, onLeft
               required
             />
             <button type="submit" className="btn btn-secondary" disabled={adding}>
-              <UserPlus size={16} />
-              {adding ? 'Adding…' : 'Add'}
+              {isAdmin ? <UserPlus size={16} /> : <Mail size={16} />}
+              {isAdmin ? (adding ? 'Adding…' : 'Add') : adding ? 'Sending…' : 'Invite'}
             </button>
           </div>
           {addError && <p className="form-error">{addError}</p>}
-          <span className="field-hint">They need a student account and can't already be in another group.</span>
+          <span className="field-hint">
+            {isAdmin
+              ? "They're added right away. They need a verified student account and can't be in another group."
+              : "They need a verified student account. They'll get a notification and join once they accept."}
+          </span>
         </form>
       )}
-      {canManage && editable && full && <span className="field-hint">This group is full.</span>}
+      {canManage && editable && full && (
+        <span className="field-hint">
+          {invitations.length > 0 && !isAdmin
+            ? 'This group is full, counting invitations still waiting for a reply.'
+            : 'This group is full.'}
+        </span>
+      )}
 
       <ConfirmDialog
         open={Boolean(pending)}

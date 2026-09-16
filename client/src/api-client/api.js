@@ -133,7 +133,13 @@ export const api = {
   assignAdviser: (id, adviserId) => request(`/theses/${id}/adviser`, { method: 'PATCH', body: { adviserId } }),
   updateThesisStatus: (id, status) => request(`/theses/${id}/status`, { method: 'PATCH', body: { status } }),
   deleteThesis: (id) => request(`/theses/${id}`, { method: 'DELETE' }),
+  // Admins add members directly; group leaders invite, and the classmate accepts or declines
   addThesisMember: (id, email) => request(`/theses/${id}/members`, { method: 'POST', body: { email } }),
+  inviteThesisMember: (id, email) => request(`/theses/${id}/invitations`, { method: 'POST', body: { email } }),
+  cancelInvitation: (id, invitationId) => request(`/theses/${id}/invitations/${invitationId}`, { method: 'DELETE' }),
+  listMyInvitations: () => request('/invitations'),
+  acceptInvitation: (id) => request(`/invitations/${id}/accept`, { method: 'POST' }),
+  declineInvitation: (id) => request(`/invitations/${id}/decline`, { method: 'POST' }),
   removeThesisMember: (id, studentId) => request(`/theses/${id}/members/${studentId}`, { method: 'DELETE' }),
   createSubmission: (thesisId, formData) =>
     request(`/theses/${thesisId}/submissions`, { method: 'POST', body: formData }),

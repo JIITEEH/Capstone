@@ -48,12 +48,12 @@ describe('signing up', () => {
     assert.match(res.data.error, /Verify your email/);
   });
 
-  it('keeps a leader from adding an unverified classmate', async () => {
+  it('keeps a leader from inviting an unverified classmate', async () => {
     const leader = await makeUser(api, { name: 'Group Leader', email: 'leader-v@tms.edu' });
     const thesis = await api.post('/theses', { token: leader.token, body: { title: 'Verified group' } });
     await signUp('impostor@tms.edu', 'Maybe Impostor');
 
-    const res = await api.post(`/theses/${thesis.data.id}/members`, { token: leader.token, body: { email: 'impostor@tms.edu' } });
+    const res = await api.post(`/theses/${thesis.data.id}/invitations`, { token: leader.token, body: { email: 'impostor@tms.edu' } });
     assert.equal(res.status, 400);
     assert.match(res.data.error, /needs to verify their email/);
   });

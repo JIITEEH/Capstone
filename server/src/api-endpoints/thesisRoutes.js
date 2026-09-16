@@ -2,11 +2,13 @@ import { Router } from 'express';
 import {
   addMember,
   assignAdviser,
+  cancelInvitation,
   createSubmission,
   createThesis,
   deleteThesis,
   exportTheses,
   getThesis,
+  inviteMember,
   listTheses,
   removeMember,
   updateStatus,
@@ -29,8 +31,11 @@ router.delete('/:id', requireRole('admin'), deleteThesis);
 router.patch('/:id/adviser', requireRole('admin'), assignAdviser);
 router.patch('/:id/status', requireRole('admin'), updateStatus);
 router.post('/:id/submissions', requireRole('student'), uploadManuscript, verifyUploadContents, createSubmission);
-// Group leaders and admins manage members; any member can remove themselves to leave
-router.post('/:id/members', requireRole('student', 'admin'), addMember);
+// Leaders invite classmates, who accept or decline; admins add directly to fix a group.
+// Any member can remove themselves to leave.
+router.post('/:id/invitations', requireRole('student'), inviteMember);
+router.delete('/:id/invitations/:invitationId', requireRole('student', 'admin'), cancelInvitation);
+router.post('/:id/members', requireRole('admin'), addMember);
 router.delete('/:id/members/:studentId', requireRole('student', 'admin'), removeMember);
 
 export default router;

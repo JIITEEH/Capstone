@@ -35,7 +35,8 @@ before(async () => {
   loner = await makeUser(api, { name: 'Lou Cruz', email: 'lou@tms.edu' });
 
   anaThesis = (await api.post('/theses', { token: ana.token, body: { title: 'Rice Disease Detection' } })).data.id;
-  await api.post(`/theses/${anaThesis}/members`, { token: ana.token, body: { email: 'ben@tms.edu' } });
+  const invitation = await api.post(`/theses/${anaThesis}/invitations`, { token: ana.token, body: { email: 'ben@tms.edu' } });
+  await api.post(`/invitations/${invitation.data.id}/accept`, { token: ben.token });
   await api.patch(`/theses/${anaThesis}/adviser`, { token: admin.token, body: { adviserId: santos.id } });
 
   carlThesis = (await api.post('/theses', { token: carl.token, body: { title: 'Flood Warning App' } })).data.id;

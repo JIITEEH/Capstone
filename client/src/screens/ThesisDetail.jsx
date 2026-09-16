@@ -44,7 +44,7 @@ export default function ThesisDetail({ thesisId, onLeft }) {
   const [modal, setModal] = useState(null);
 
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
-  const { thesis, members, groupLimit, submissions, schedules, activity } = data;
+  const { thesis, members, invitations, groupLimit, submissions, schedules, activity } = data;
 
   const isStudent = user.role === 'student';
   const isAdmin = user.role === 'admin';
@@ -195,7 +195,14 @@ export default function ThesisDetail({ thesisId, onLeft }) {
             <div className="card-header">
               <h2>People</h2>
             </div>
-            <GroupMembers thesis={thesis} members={members} limit={groupLimit} onChanged={reload} onLeft={onLeft} />
+            <GroupMembers
+              thesis={thesis}
+              members={members}
+              invitations={invitations}
+              limit={groupLimit}
+              onChanged={reload}
+              onLeft={onLeft}
+            />
             <div className="people group-adviser">
               <Person label="Adviser" name={thesis.adviser_name} detail={thesis.adviser_email} />
             </div>

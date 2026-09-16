@@ -26,12 +26,22 @@ before(async () => {
 });
 
 describe('who gets told what', () => {
-  it('tells a student they were added to a group', async () => {
-    const res = await api.post(`/theses/${thesisId}/members`, { token: leader.token, body: { email: 'mark@tms.edu' } });
-    assert.equal(res.status, 201);
+  it('tells a classmate they were invited, and the group when they join', async () => {
+    const invite = await api.post(`/theses/${thesisId}/invitations`, { token: leader.token, body: { email: 'mark@tms.edu' } });
+    assert.equal(invite.status, 201);
+    assert.ok((await titles(member)).includes('Lea Santos invited you to join their thesis group'));
+    assert.equal((await titles(leader)).length, 0, 'the leader who invited them is not told about their own action');
 
-    assert.ok((await titles(member)).includes('You were added to a thesis group'));
-    assert.equal((await titles(leader)).length, 0, 'the leader who added them is not told about their own action');
+    assert.equal((await api.post(`/invitations/${invite.data.id}/accept`, { token: member.token })).status, 200);
+    assert.ok((await titles(leader)).includes('Mark Dizon joined your thesis group'));
+    assert.ok(!(await titles(member)).includes('Mark Dizon joined your thesis group'));
+  });
+
+  it('tells a student when an admin adds them directly', async () => {
+    const added = await makeUser(api, { name: 'Added Directly', email: 'added@tms.edu' });
+    const res = await api.post(`/theses/${thesisId}/members`, { token: admin.token, body: { email: 'added@tms.edu' } });
+    assert.equal(res.status, 201);
+    assert.ok((await titles(added)).includes('An admin added you to a thesis group'));
   });
 
   it('tells the adviser and the group when an adviser is assigned', async () => {
@@ -146,7 +156,7 @@ describe('when nothing should be sent', () => {
 
   it("removes a person's notifications when their account is deleted", async () => {
     const leaving = await makeUser(api, { name: 'Leaving', email: 'leaving@tms.edu' });
-    await api.post(`/theses/${thesisId}/members`, { token: leader.token, body: { email: 'leaving@tms.edu' } });
+    await api.post(`/theses/${thesisId}/invitations`, { token: leader.token, body: { email: 'leaving@tms.edu' } });
     assert.ok((await feed(leaving)).notifications.length > 0);
 
     await api.delete(`/users/${leaving.id}`, { token: admin.token });

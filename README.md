@@ -39,7 +39,7 @@ Every rule below is enforced by the API. The UI also hides what a role can't use
 | ----------------------------------------- | -------------------------- | -------------------------------- | ---------------------------- |
 | Dashboard                                 | Own progress and feedback  | Review queue and advisees        | System overview              |
 | Create a thesis (one per student; creator leads the group) | ✅        | —                                | —                            |
-| Add or remove group members (up to 5)     | Group leader; any member can leave | —                        | ✅                           |
+| Invite or remove group members (up to 5)  | Group leader invites, classmate accepts; any member can leave | — | Adds directly            |
 | View theses                               | Own group's only           | Assigned advisees only           | All                          |
 | Edit thesis title, abstract, keywords     | Own, until completed       | —                                | —                            |
 | Upload submissions (PDF/DOC/DOCX, 50 MB)  | Own thesis                 | —                                | —                            |
@@ -64,7 +64,7 @@ Users who try to open something outside their role get a 403 (wrong role) or 404
 
 ### Thesis workflow
 
-A thesis belongs to a **group of 1 to 5 students**. The student who creates it is the group leader and adds classmates by the email on their student accounts. Every member can edit the thesis, submit, and comment. If the leader leaves, the longest-standing member takes over.
+A thesis belongs to a **group of 1 to 5 students**. The student who creates it is the group leader and invites classmates by the email on their student accounts; a classmate joins by accepting the invitation on their My Thesis page. Admins can add a student directly to fix a group. Every member can edit the thesis, submit, and comment. If the leader leaves, the longest-standing member takes over.
 
 A thesis moves through four stages, in order: **Proposal → Chapters 1–3 → Chapters 4–5 → Final Manuscript**.
 
@@ -96,6 +96,8 @@ erDiagram
     theses ||--o{ activity : "logs"
     users ||--o{ password_resets : "requests"
     users ||--o{ email_verifications : "confirms with"
+    theses ||--o{ group_invitations : "invites to"
+    users ||--o{ group_invitations : "is invited"
     users ||--o{ notifications : "receives"
     users ||--o{ audit_log : "acts in (admin)"
     schedules ||--o{ defense_evaluations : "scored in"
@@ -168,6 +170,14 @@ erDiagram
         text token_hash UK
         text expires_at
     }
+    group_invitations {
+        int id PK
+        int thesis_id FK
+        int student_id FK
+        int invited_by FK
+        text status
+        text responded_at
+    }
     email_verifications {
         int id PK
         int user_id FK
@@ -217,6 +227,7 @@ erDiagram
 - **`submission_details`** is a view that joins each submission with its review. A submission's status (`pending`, `approved`, `revisions_requested`) comes from its review, so status is never stored twice.
 - **`password_resets`** holds one-time reset links. Only a SHA-256 hash of each token is stored. A link expires after 1 hour and is deleted once used. The link is emailed over SMTP (see `DEPLOYMENT.md`); outside production it is also shown on the "Forgot password" page so the flow works without a mail server.
 - **`users.email_verified_at`** is empty until a student who signed up opens the link in their verification email. Until then they can sign in, but can't start a thesis or be added to a group, so nobody can register with a classmate's address and join in their place. Accounts created by an admin, and every account that existed before verification, count as verified. `email_verifications` stores the links, hashed, for 48 hours.
+- **`group_invitations`** records each invitation a group leader sends: `pending`, then `accepted`, `declined`, or `cancelled`. A partial unique index allows one pending invitation per student per group. Pending invitations hold a seat, so a group can't be over-invited. Accepting one withdraws the student's other pending invitations. Inviting a student who is already in another group still succeeds for the leader; only the student is told, when they try to accept, so leaders can't probe who is taken.
 - **`users.token_version`** ends sessions when a password changes. Each sign-in token records it, and every password change raises it, so older tokens are refused.
 - **`notifications`** holds one row per recipient, so each person reads and dismisses their own copy. Nobody is notified about their own action, and each notification is written in the same transaction as the event it describes.
 - **`audit_log`** records admin changes to accounts and theses. Names are copied in at the time, so an entry outlives the user or admin it mentions. The app never edits or deletes an entry.
@@ -278,7 +289,10 @@ Capstone/
 | PATCH        | `/api/theses/:id/adviser`, `/api/theses/:id/status` | Admin                       |
 | DELETE       | `/api/theses/:id`                          | Admin                                |
 | POST         | `/api/theses/:id/submissions`              | Student (own)                        |
-| POST / DELETE | `/api/theses/:id/members`, `/api/theses/:id/members/:studentId` | Group leader, Admin (members can remove themselves) |
+| POST / DELETE | `/api/theses/:id/invitations`, `/api/theses/:id/invitations/:invitationId` | Group leader (cancel: also Admin) |
+| POST         | `/api/theses/:id/members`                  | Admin (adds directly)                |
+| DELETE       | `/api/theses/:id/members/:studentId`       | Group leader, Admin (members can remove themselves) |
+| GET / POST   | `/api/invitations`, `/api/invitations/:id/accept`, `/api/invitations/:id/decline` | Student (own invitations) |
 | GET          | `/api/submissions/:id`, `/api/submissions/:id/file` | Anyone with thesis access   |
 | POST         | `/api/submissions/:id/comments`            | Student (own), assigned adviser      |
 | PATCH        | `/api/submissions/:id/review`              | Assigned adviser                     |

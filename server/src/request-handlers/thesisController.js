@@ -2,6 +2,7 @@ import { MAX_GROUP_SIZE, STAGES, THESIS_STATUSES } from '../constants.js';
 import { transaction } from '../database/index.js';
 import * as Activity from '../database-queries/activityModel.js';
 import * as Audit from '../database-queries/auditModel.js';
+import * as Invitation from '../database-queries/invitationModel.js';
 import * as Notification from '../database-queries/notificationModel.js';
 import * as Schedule from '../database-queries/scheduleModel.js';
 import * as Submission from '../database-queries/submissionModel.js';
@@ -87,6 +88,7 @@ export function getThesis(req, res) {
     thesis,
     members: Thesis.listMembers(thesis.id),
     groupLimit: MAX_GROUP_SIZE,
+    invitations: Invitation.listPendingForThesis(thesis.id),
     submissions: Submission.listByThesis(thesis.id),
     schedules: Schedule.list({ thesisId: thesis.id, range: 'upcoming' }).map((event) =>
       withSchedulePermissions(req.user, event),
@@ -205,10 +207,12 @@ function assertGroupEditable(user, thesis) {
   }
 }
 
-// The group leader or an admin adds a classmate by the email on their student account
+// Admins add a student directly, to fix a group. Leaders invite instead; see inviteMember.
 export function addMember(req, res) {
   const thesis = getAccessibleThesis(req.user, req.params.id);
-  if (!canManageGroup(req.user, thesis)) throw new HttpError(403, 'Only the group leader can add members');
+  if (req.user.role !== 'admin') {
+    throw new HttpError(403, 'Group leaders invite classmates instead of adding them. Use Invite a classmate.');
+  }
   assertGroupEditable(req.user, thesis);
 
   const email = requireEmail(req.body?.email);
@@ -241,12 +245,74 @@ export function addMember(req, res) {
       recipients: [student.id],
       actorId: req.user.id,
       type: 'group.added',
-      title: 'You were added to a thesis group',
+      title: 'An admin added you to a thesis group',
       body: thesis.title,
       link: '/thesis',
     });
   });
   res.status(201).json(Thesis.listMembers(thesis.id));
+}
+
+// Finds the student behind an invitation email, with the checks that apply to anyone joining a group
+function findJoinableStudent(email) {
+  const student = User.findByEmailWithHash(email);
+  if (!student || student.role !== 'student' || !student.is_active) {
+    throw new HttpError(400, 'No active student account uses that email');
+  }
+  if (!student.email_verified_at) {
+    throw new HttpError(400, `${student.name} needs to verify their email address before joining a group`);
+  }
+  return student;
+}
+
+// The group leader invites a classmate, who then accepts or declines. Whether the classmate is
+// already in another group is deliberately not checked here: telling the leader would reveal who
+// is taken. The invitee finds out, privately, when they try to accept.
+export function inviteMember(req, res) {
+  const thesis = getAccessibleThesis(req.user, req.params.id);
+  if (!canManageGroup(req.user, thesis)) throw new HttpError(403, 'Only the group leader can invite classmates');
+  assertGroupEditable(req.user, thesis);
+
+  const student = findJoinableStudent(requireEmail(req.body?.email));
+  if (Thesis.isMember(thesis.id, student.id)) throw new HttpError(409, `${student.name} is already in this group`);
+  if (Invitation.findPending(thesis.id, student.id)) {
+    throw new HttpError(409, `${student.name} already has an invitation to this group`);
+  }
+  // Pending invitations count toward the limit, so a leader can't invite past a full group
+  if (thesis.member_count + Invitation.countPendingForThesis(thesis.id) >= MAX_GROUP_SIZE) {
+    throw new HttpError(400, `A group can have at most ${MAX_GROUP_SIZE} students, counting pending invitations`);
+  }
+
+  const invitation = transaction(() => {
+    const created = Invitation.create({ thesisId: thesis.id, studentId: student.id, invitedBy: req.user.id });
+    Activity.log(thesis.id, req.user.id, `invited ${student.name} to the group`);
+    Notification.notify({
+      recipients: [student.id],
+      actorId: req.user.id,
+      type: 'group.invited',
+      title: `${req.user.name} invited you to join their thesis group`,
+      body: thesis.title,
+      link: '/thesis',
+    });
+    return created;
+  });
+  res.status(201).json(invitation);
+}
+
+export function cancelInvitation(req, res) {
+  const thesis = getAccessibleThesis(req.user, req.params.id);
+  if (!canManageGroup(req.user, thesis)) throw new HttpError(403, 'Only the group leader can cancel invitations');
+
+  const invitation = Invitation.findById(parseId(req.params.invitationId, 'Invitation not found'));
+  if (!invitation || invitation.thesis_id !== thesis.id || invitation.status !== 'pending') {
+    throw new HttpError(404, 'Invitation not found');
+  }
+
+  transaction(() => {
+    Invitation.setStatus(invitation.id, 'cancelled');
+    Activity.log(thesis.id, req.user.id, `cancelled the invitation to ${invitation.student_name}`);
+  });
+  res.status(204).end();
 }
 
 // The leader or an admin removes a member, and any member can remove themselves to leave.
