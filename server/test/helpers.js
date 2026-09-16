@@ -37,8 +37,8 @@ export async function startApi() {
 
   const base = `http://127.0.0.1:${server.address().port}/api`;
 
-  async function request(method, path, { token, body, form } = {}) {
-    const headers = {};
+  async function request(method, path, { token, body, form, headers: extraHeaders = {} } = {}) {
+    const headers = { ...extraHeaders };
     if (token) headers.Authorization = `Bearer ${token}`;
     let payload = form;
     if (body !== undefined) {

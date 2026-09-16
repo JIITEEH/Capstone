@@ -7,6 +7,8 @@ import path from 'node:path';
 export const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thesistrack-test-'));
 
 process.env.NODE_ENV = 'test';
+// A value left in the developer's shell must not change what the tests see
+delete process.env.TRUST_PROXY;
 process.env.DATABASE_PATH = path.join(tempDir, 'test.db');
 process.env.UPLOAD_DIR = path.join(tempDir, 'uploads');
 process.env.JWT_SECRET = 'test-only-secret';

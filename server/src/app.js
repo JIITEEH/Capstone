@@ -10,6 +10,10 @@ import { securityHeaders } from './request-filters/securityHeaders.js';
 
 const app = express();
 
+// Behind a proxy, every request arrives from the proxy's address. Without this, rate limits keyed
+// on the address would put every visitor in one bucket, and a few bad attempts would lock out all.
+app.set('trust proxy', config.trustProxy);
+
 app.use(securityHeaders);
 app.use(cors({ origin: config.clientOrigin }));
 app.use(express.json());

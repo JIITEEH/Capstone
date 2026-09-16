@@ -246,7 +246,10 @@ Every push and pull request to `main` or `development` runs lint, tests, and the
 
 ## Production notes
 
+**Deploying for real students? Follow [DEPLOYMENT.md](DEPLOYMENT.md)** — install, every setting, nginx with HTTPS, keeping the server running, nightly backups, and upgrading safely. The points below are the essentials.
+
 - Set `NODE_ENV=production` and a long random `JWT_SECRET` in `server/.env`. The server refuses to start in production without one.
+- Behind nginx or a hosting platform, set `TRUST_PROXY=1`. Without it every visitor shares one rate limit, so a few wrong password-reset attempts from anyone lock out everyone.
 - Run `npm run build`, then `npm start`. Express serves the website and the API from one port.
 - Every response carries security headers from `server/src/request-filters/securityHeaders.js`: a content security policy, `X-Content-Type-Options: nosniff`, frame denial, a referrer policy, and HSTS once `NODE_ENV=production`.
 - **Back up every night.** `npm run db:backup` writes a timestamped folder under `server/backups/` holding the database, every uploaded manuscript, and a `manifest.json` recording what was in it. Backups older than 14 days are deleted, except the newest, which is always kept. Change the window with `BACKUP_KEEP_DAYS`, or the location with `BACKUP_DIR`.
