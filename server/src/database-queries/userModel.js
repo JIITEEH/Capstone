@@ -16,7 +16,7 @@ export function emailTaken(email, excludeId = 0) {
   return Boolean(db.prepare('SELECT 1 FROM users WHERE email = ? AND id != ?').get(email, excludeId));
 }
 
-export function list({ role, search } = {}) {
+function filtersToWhere({ role, search } = {}) {
   const where = [];
   const params = [];
   if (role) {
@@ -27,16 +27,28 @@ export function list({ role, search } = {}) {
     where.push('(u.name LIKE ? OR u.email LIKE ?)');
     params.push(`%${search}%`, `%${search}%`);
   }
+  return { sql: where.length ? `WHERE ${where.join(' AND ')}` : '', params };
+}
+
+// Pass `limit` and `offset` for one page; leave them out for every matching account
+export function list(filters = {}, { limit, offset = 0 } = {}) {
+  const { sql, params } = filtersToWhere(filters);
+  const page = limit ? 'LIMIT ? OFFSET ?' : '';
   return db
     .prepare(
       `SELECT ${PUBLIC_COLUMNS},
          (SELECT COUNT(*) FROM theses t WHERE t.adviser_id = u.id) AS advisee_count,
          EXISTS (SELECT 1 FROM thesis_members m WHERE m.student_id = u.id) AS has_thesis
        FROM users u
-       ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
-       ORDER BY u.created_at DESC, u.id DESC`,
+       ${sql}
+       ORDER BY u.created_at DESC, u.id DESC ${page}`,
     )
-    .all(...params);
+    .all(...params, ...(limit ? [limit, offset] : []));
+}
+
+export function count(filters = {}) {
+  const { sql, params } = filtersToWhere(filters);
+  return db.prepare(`SELECT COUNT(*) AS n FROM users u ${sql}`).get(...params).n;
 }
 
 export function listAdvisers() {

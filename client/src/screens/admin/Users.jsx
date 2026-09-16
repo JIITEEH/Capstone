@@ -6,9 +6,11 @@ import { Badge, RoleBadge } from '../../ui-pieces/basics/Badge.jsx';
 import { EmptyState, LoadState, Spinner } from '../../ui-pieces/basics/Feedback.jsx';
 import Modal, { ConfirmDialog } from '../../ui-pieces/basics/Modal.jsx';
 import PageHeader from '../../ui-pieces/basics/PageHeader.jsx';
+import Pagination from '../../ui-pieces/basics/Pagination.jsx';
 import { useAuth } from '../../shared-state/AuthContext.jsx';
 import { useToast } from '../../shared-state/ToastContext.jsx';
 import useApi from '../../reusable-logic/useApi.js';
+import usePage from '../../reusable-logic/usePage.js';
 import { api } from '../../api-client/api.js';
 import { ROLES } from '../../helpers/constants.js';
 import { formatDate, plural } from '../../helpers/format.js';
@@ -142,7 +144,9 @@ export default function Users() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const { data: users, loading, error, reload } = useApi(() => api.listUsers({ role, search }), [role, search]);
+  const [page, setPage] = usePage({ role, search });
+  const { data, loading, error, reload } = useApi(() => api.listUsers({ role, search, page }), [role, search, page]);
+  const users = data?.items;
 
   const [exporting, setExporting] = useState(false);
   async function exportWorkload() {
@@ -290,6 +294,7 @@ export default function Users() {
             </table>
           </div>
         )}
+        {data && <Pagination {...data} onChange={setPage} />}
       </section>
 
       <Modal

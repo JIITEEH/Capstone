@@ -7,6 +7,7 @@ import * as User from '../database-queries/userModel.js';
 import { sendCsv, toCsv } from '../helpers/csv.js';
 import { deleteStoredFiles } from '../helpers/files.js';
 import { HttpError } from '../helpers/httpError.js';
+import { pageOf, requestedPage } from '../helpers/paging.js';
 import {
   oneOf,
   optionalText,
@@ -19,7 +20,10 @@ import {
 
 export function listUsers(req, res) {
   const role = ROLES.includes(req.query.role) ? req.query.role : undefined;
-  res.json(User.list({ role, search: queryString(req.query.search) }));
+  const filters = { role, search: queryString(req.query.search) };
+  const page = requestedPage(req.query);
+  if (!page) return res.json(User.list(filters));
+  res.json(pageOf(page, { count: () => User.count(filters), fetch: (range) => User.list(filters, range) }));
 }
 
 export function listAdvisers(req, res) {

@@ -13,6 +13,7 @@ import { canManageGroup, getAccessibleThesis, withSchedulePermissions } from '..
 import { sendCsv, toCsv } from '../helpers/csv.js';
 import { deleteStoredFiles } from '../helpers/files.js';
 import { HttpError } from '../helpers/httpError.js';
+import { pageOf, requestedPage } from '../helpers/paging.js';
 import { oneOf, optionalText, parseId, queryString, requireEmail, requireText } from '../helpers/validate.js';
 
 function readThesisFields(body, { partial }) {
@@ -41,7 +42,10 @@ function thesisFilters(req) {
 }
 
 export function listTheses(req, res) {
-  res.json(Thesis.list(thesisFilters(req)));
+  const filters = thesisFilters(req);
+  const page = requestedPage(req.query);
+  if (!page) return res.json(Thesis.list(filters));
+  res.json(pageOf(page, { count: () => Thesis.count(filters), fetch: (range) => Thesis.list(filters, range) }));
 }
 
 // The first stage not yet approved is the one the group is working on

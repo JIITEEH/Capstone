@@ -4,11 +4,13 @@ import { Download, Library, Search } from 'lucide-react';
 import { ThesisStatusBadge } from '../ui-pieces/basics/Badge.jsx';
 import { EmptyState, LoadState, Spinner } from '../ui-pieces/basics/Feedback.jsx';
 import PageHeader from '../ui-pieces/basics/PageHeader.jsx';
+import Pagination from '../ui-pieces/basics/Pagination.jsx';
 import { ProgressBar } from '../ui-pieces/basics/StageTracker.jsx';
 import { DueNote } from '../ui-pieces/thesis/DueBadge.jsx';
 import { useAuth } from '../shared-state/AuthContext.jsx';
 import { useToast } from '../shared-state/ToastContext.jsx';
 import useApi from '../reusable-logic/useApi.js';
+import usePage from '../reusable-logic/usePage.js';
 import { api } from '../api-client/api.js';
 import { STAGES, THESIS_STATUS } from '../helpers/constants.js';
 import { formatDate } from '../helpers/format.js';
@@ -35,10 +37,13 @@ export default function ThesesList() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const { data: theses, loading, error } = useApi(
-    () => api.listTheses({ status, adviser: isAdmin ? adviser : '', term: isAdmin ? term : '', deadline, search }),
-    [status, adviser, term, deadline, search, isAdmin],
+  const filters = { status, adviser: isAdmin ? adviser : '', term: isAdmin ? term : '', deadline, search };
+  const [page, setPage] = usePage(filters);
+  const { data, loading, error } = useApi(
+    () => api.listTheses({ ...filters, page }),
+    [status, adviser, term, deadline, search, isAdmin, page],
   );
+  const theses = data?.items;
   const { data: advisers } = useApi(() => (isAdmin ? api.listAdvisers() : Promise.resolve([])), [isAdmin]);
   const { data: terms } = useApi(() => (isAdmin ? api.listTerms() : Promise.resolve([])), [isAdmin]);
 
@@ -185,6 +190,7 @@ export default function ThesesList() {
             </table>
           </div>
         )}
+        {data && <Pagination {...data} onChange={setPage} />}
       </section>
     </>
   );

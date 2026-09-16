@@ -1576,6 +1576,28 @@ select.input {
   border-bottom: 1px solid var(--border);
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pagination-page {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
 .toolbar > select.input {
   width: auto;
   min-width: 160px;

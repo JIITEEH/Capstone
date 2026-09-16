@@ -293,6 +293,8 @@ Capstone/
 
 ## API overview
 
+`GET /api/theses` and `GET /api/users` return every matching row. Add `?page=1` (2, 3, …) to get 25 at a time as `{ items, total, page, pages, pageSize }`; the list screens do. A page past the end returns the last page.
+
 | Method       | Endpoint                                   | Who                                  |
 | ------------ | ------------------------------------------ | ------------------------------------ |
 | POST         | `/api/auth/register`, `/api/auth/login`    | Public                               |

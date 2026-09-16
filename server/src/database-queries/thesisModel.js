@@ -48,7 +48,7 @@ const SELECT_THESIS = `
   LEFT JOIN terms tm ON tm.id = t.term_id
   LEFT JOIN ${NEXT_DEADLINE}`;
 
-export function list({ studentId, adviserId, unassigned, status, search, termId, overdue } = {}) {
+function filtersToWhere({ studentId, adviserId, unassigned, status, search, termId, overdue } = {}) {
   const where = [];
   const params = [];
   if (studentId) {
@@ -76,12 +76,22 @@ export function list({ studentId, adviserId, unassigned, status, search, termId,
       WHERE mm.thesis_id = t.id AND mu.name LIKE ?))`);
     params.push(`%${search}%`, `%${search}%`, `%${search}%`);
   }
+  return { sql: where.length ? `WHERE ${where.join(' AND ')}` : '', params };
+}
+
+// Pass `limit` and `offset` for one page; leave them out for every matching thesis
+export function list(filters = {}, { limit, offset = 0 } = {}) {
+  const { sql, params } = filtersToWhere(filters);
+  const page = limit ? 'LIMIT ? OFFSET ?' : '';
   return db
-    .prepare(
-      `${SELECT_THESIS} ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
-       ORDER BY t.updated_at DESC, t.id DESC`,
-    )
-    .all(...params);
+    .prepare(`${SELECT_THESIS} ${sql} ORDER BY t.updated_at DESC, t.id DESC ${page}`)
+    .all(...params, ...(limit ? [limit, offset] : []));
+}
+
+export function count(filters = {}) {
+  const { sql, params } = filtersToWhere(filters);
+  // The deadline join is only here because the overdue filter reads it
+  return db.prepare(`SELECT COUNT(*) AS n FROM theses t LEFT JOIN ${NEXT_DEADLINE} ${sql}`).get(...params).n;
 }
 
 export function findById(id) {
