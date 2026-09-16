@@ -236,6 +236,7 @@ Capstone/
 | `npm run build`   | Builds the website into `client/dist`                 |
 | `npm start`       | Runs the API and serves `client/dist` if it exists    |
 | `npm run db:seed` | Deletes the database and uploads, then loads demo data (development only) |
+| `npm run db:backup` | Copies the database and uploads into `server/backups/`, then removes old ones |
 | `npm run lint`    | Checks the code with ESLint                           |
 | `npm test`        | Runs the API tests (each on a throwaway database) and client tests |
 
@@ -246,4 +247,21 @@ Every push and pull request to `main` or `development` runs lint, tests, and the
 - Set `NODE_ENV=production` and a long random `JWT_SECRET` in `server/.env`. The server refuses to start in production without one.
 - Run `npm run build`, then `npm start`. Express serves the website and the API from one port.
 - Every response carries security headers from `server/src/request-filters/securityHeaders.js`: a content security policy, `X-Content-Type-Options: nosniff`, frame denial, a referrer policy, and HSTS once `NODE_ENV=production`.
+- **Back up every night.** `npm run db:backup` writes a timestamped folder under `server/backups/` holding the database, every uploaded manuscript, and a `manifest.json` recording what was in it. Backups older than 14 days are deleted, except the newest, which is always kept. Change the window with `BACKUP_KEEP_DAYS`, or the location with `BACKUP_DIR`.
+
+  Run it nightly with cron (`crontab -e`):
+
+  ```
+  30 2 * * * cd /path/to/Capstone && /usr/local/bin/npm run db:backup >> server/backups/backup.log 2>&1
+  ```
+
+  **To restore**, stop the server, then:
+
+  ```bash
+  npm run db:backup -- --list                                   # see what you have
+  npm run db:backup -- --restore server/backups/2026-09-16T02-30-00
+  npm start                                                     # start again
+  ```
+
+  Restoring sets the current database and uploads aside first (`app.db.replaced-<time>`), so restoring the wrong backup can itself be undone. **Backups sit on the same disk as the data**, which protects against mistakes and corruption but not against losing the machine: copy `server/backups/` somewhere else regularly.
 - Uploads are accepted by **content, not by file name**. After a file is written, its first bytes must match its extension (`%PDF-` for PDF, the OLE2 signature for DOC, the ZIP signature for DOCX). Anything else is deleted right away and the student gets a message explaining what to re-export. The server also renames every upload, so a file name can never become a path or a script.

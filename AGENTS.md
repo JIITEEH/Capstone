@@ -52,3 +52,4 @@ A Thesis Management System with three roles: Student, Adviser, and Admin.
 - A migration must upgrade an existing database in place (`ALTER TABLE`, `CREATE TABLE`, backfill with `UPDATE`). Never write one that drops and recreates a table holding real data.
 - After adding a migration, update `server/src/database/seed.js` and the ER diagram in `README.md` to match.
 - `npm run db:seed` deletes the database and all uploads. It is for demo data only, never for applying a schema change.
+- `npm run db:backup` copies the database and uploads into `server/backups/`. Take a backup before anything that rewrites data, and keep the restore path working: it is tested in `server/test/backup.test.js`.
