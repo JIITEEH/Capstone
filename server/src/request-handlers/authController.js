@@ -7,9 +7,12 @@ import { verifyPassword } from '../helpers/password.js';
 import { HttpError } from '../helpers/httpError.js';
 import { optionalText, requireEmail, requirePassword, requireText } from '../helpers/validate.js';
 
+// tv is the user's token_version when the token was issued; a later password change makes it stale
 function issueToken(user, { remember = false } = {}) {
   const expiresIn = remember ? config.jwtRememberExpiresIn : config.jwtExpiresIn;
-  return jwt.sign({ sub: String(user.id), role: user.role }, config.jwtSecret, { expiresIn });
+  return jwt.sign({ sub: String(user.id), role: user.role, tv: User.getTokenVersion(user.id) }, config.jwtSecret, {
+    expiresIn,
+  });
 }
 
 // Public sign-up creates student accounts only; admins create adviser and admin accounts
@@ -81,15 +84,22 @@ export function updateMe(req, res) {
   if (body.name !== undefined) fields.name = requireText(body.name, 'Name', { max: 120 });
   if (body.program !== undefined) fields.program = optionalText(body.program, 'Program', { max: 120 });
 
+  let token;
   if (body.newPassword !== undefined) {
     const record = User.findByEmailWithHash(req.user.email);
     if (typeof body.currentPassword !== 'string' || !verifyPassword(body.currentPassword, record.password_hash)) {
       throw new HttpError(400, 'Current password is incorrect');
     }
     User.setPassword(req.user.id, requirePassword(body.newPassword, 'New password'));
+
+    // The change signs out every other device, including this one's old token. Hand back a new
+    // token for this device, keeping the "keep me signed in" choice it was issued with.
+    const remember = req.auth ? req.auth.exp - req.auth.iat > 24 * 60 * 60 : false;
+    token = issueToken(req.user, { remember });
   }
 
-  res.json({ user: User.update(req.user.id, fields) });
+  const user = User.update(req.user.id, fields);
+  res.json(token ? { user, token } : { user });
 }
 
 const MAX_DEMO_ACCOUNTS = 30;

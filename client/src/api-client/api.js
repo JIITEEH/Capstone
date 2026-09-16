@@ -20,6 +20,15 @@ export const tokenStore = {
       // Storage unavailable (private mode); the session lasts until reload
     }
   },
+  // Swaps in a new token wherever the current one is kept, so "keep me signed in" is preserved
+  replace(token) {
+    try {
+      const remembered = localStorage.getItem(TOKEN_KEY) !== null;
+      (remembered ? localStorage : sessionStorage).setItem(TOKEN_KEY, token);
+    } catch {
+      // Storage unavailable; the session lasts until reload
+    }
+  },
   clear() {
     try {
       localStorage.removeItem(TOKEN_KEY);
@@ -76,7 +85,13 @@ export const api = {
     request('/auth/reset-password', { method: 'POST', body: { token, password } }),
   me: () => request('/auth/me'),
   demoAccounts: () => request('/auth/demo-accounts'),
-  updateMe: (data) => request('/auth/me', { method: 'PATCH', body: data }),
+  // Changing the password ends every session, this one included, so the server sends a new token
+  // for this device. Saving it here keeps the user signed in without every caller knowing.
+  async updateMe(data) {
+    const result = await request('/auth/me', { method: 'PATCH', body: data });
+    if (result?.token) tokenStore.replace(result.token);
+    return result;
+  },
 
   dashboard: () => request('/dashboard'),
   // Theses, people, and submissions the signed-in user can open, grouped

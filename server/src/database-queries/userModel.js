@@ -72,8 +72,18 @@ export function update(id, fields) {
   return findById(id);
 }
 
+// Every password change goes through here: the user's own change, an admin setting one, and a
+// reset link. Raising token_version ends every session signed in with the old password.
 export function setPassword(id, password) {
-  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashPassword(password), id);
+  db.prepare('UPDATE users SET password_hash = ?, token_version = token_version + 1 WHERE id = ?').run(
+    hashPassword(password),
+    id,
+  );
+}
+
+// Kept out of PUBLIC_COLUMNS so it never appears in an API response
+export function getTokenVersion(id) {
+  return db.prepare('SELECT token_version FROM users WHERE id = ?').get(id)?.token_version ?? 0;
 }
 
 export function remove(id) {

@@ -19,7 +19,14 @@ export function requireAuth(req, res, next) {
   const user = User.findById(Number(payload.sub));
   if (!user || !user.is_active) return next(new HttpError(401, 'This account is no longer available'));
 
+  // A password change raises the user's token_version, ending sessions signed in before it.
+  // Tokens from before this check existed carry no tv and count as version 0.
+  if ((payload.tv ?? 0) !== User.getTokenVersion(user.id)) {
+    return next(new HttpError(401, 'Your password was changed, so this session ended. Please sign in again.'));
+  }
+
   req.user = user;
+  req.auth = payload;
   next();
 }
 
