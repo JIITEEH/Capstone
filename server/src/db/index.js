@@ -1,29 +1,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import config from '../config/index.js';
-
-// Bump when schema.sql changes so existing databases get rebuilt instead of silently breaking
-const SCHEMA_VERSION = 4;
+import { migrate } from './migrate.js';
 
 fs.mkdirSync(path.dirname(config.databasePath), { recursive: true });
 
 const db = new DatabaseSync(config.databasePath);
 db.exec('PRAGMA foreign_keys = ON;');
 
-const hasTables = db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'users'").get();
-const { user_version: currentVersion } = db.prepare('PRAGMA user_version').get();
-if (hasTables && currentVersion !== SCHEMA_VERSION) {
-  throw new Error(
-    `The database schema is out of date (version ${currentVersion}, expected ${SCHEMA_VERSION}). ` +
-      'Run "npm run db:seed" to rebuild it.',
-  );
+// Upgrades the database in place. Existing accounts, theses, and uploads are kept.
+const applied = migrate(db);
+if (applied.length > 0 && config.env !== 'test') {
+  console.log(`Database upgraded: applied ${applied.map(({ name }) => name).join(', ')}`);
 }
-
-const schemaPath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'schema.sql');
-db.exec(fs.readFileSync(schemaPath, 'utf8'));
-db.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
 
 export function transaction(fn) {
   db.exec('BEGIN');

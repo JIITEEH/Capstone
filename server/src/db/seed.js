@@ -1,10 +1,21 @@
 // Resets the database and uploads, then loads demo data.
 // Run with: npm run db:seed
+//
+// This is for demo data only. It DELETES every account, thesis, and uploaded manuscript.
+// A schema change no longer needs it: add a migration in db/migrations/ and the server upgrades
+// the database in place, keeping the data.
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import config from '../config/index.js';
 import { DEMO_PASSWORD } from '../constants.js';
+
+// Real student work lives in production. Wiping it should take more than a mistyped command.
+if (config.env === 'production' && process.env.SEED_ALLOW_PRODUCTION !== 'yes') {
+  console.error('Refusing to seed in production: this deletes every account, thesis, and upload.');
+  console.error('Set SEED_ALLOW_PRODUCTION=yes only if you really mean to erase it. Nothing was changed.');
+  process.exit(1);
+}
 
 // The admin never uses the public demo password. Set SEED_ADMIN_PASSWORD in server/.env to
 // choose one; otherwise a random password is generated and printed once at the end.

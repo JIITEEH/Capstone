@@ -1,7 +1,7 @@
 import db from '../db/index.js';
 import { MEMBER_NAMES } from './thesisModel.js';
 
-// submission_details (see schema.sql) adds status and review columns from the reviews table
+// submission_details (see db/migrations/004_baseline.sql) adds status and review columns from reviews
 const SELECT_SUBMISSION = `
   SELECT sub.id, sub.thesis_id, sub.stage, sub.notes, sub.file_name, sub.file_size, sub.mime_type,
     sub.submitted_at, sub.status, sub.reviewer_id, sub.review_feedback, sub.reviewed_at,

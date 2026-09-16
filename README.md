@@ -17,7 +17,7 @@ npm run dev                            # run the API and the website together
 
 Open http://localhost:5173. The API runs at http://localhost:3001/api.
 
-> If you pulled a change to the database schema, the server stops with "The database schema is out of date". Run `npm run db:seed` to rebuild it.
+> If you pulled a change to the database schema, the server applies it on the next start and keeps your data. Watch for a line like `Database upgraded: applied 005_add_notifications.sql`.
 
 ### Demo accounts
 
@@ -29,7 +29,7 @@ The adviser and student accounts use the password **`password123`**. The admin a
 | Adviser | `maria.santos@tms.edu` | One advisee, one submission to review, upcoming consultation and defense |
 | Student | `ana.cruz@tms.edu`     | Two stages approved, Chapters 4–5 under review, final defense scheduled |
 
-Run `npm run db:seed` any time to reset the database and uploaded files.
+Run `npm run db:seed` any time to reset the database and uploaded files back to the demo data. It deletes everything else, so use it in development only.
 
 ## Roles and permissions
 
@@ -72,7 +72,7 @@ Along the way, advisers schedule **consultations** and admins schedule the **pro
 
 ## Database
 
-The app uses a relational SQLite database. The schema lives in [`server/src/db/schema.sql`](server/src/db/schema.sql).
+The app uses a relational SQLite database. Its shape is built by the numbered files in [`server/src/db/migrations/`](server/src/db/migrations/), starting from [`004_baseline.sql`](server/src/db/migrations/004_baseline.sql).
 
 ```mermaid
 erDiagram
@@ -162,7 +162,9 @@ erDiagram
 - **`thesis_members`** links students to their thesis group. `student_id` is unique, so a student belongs to at most one thesis, and a partial unique index allows only one leader per group. Deleting a student removes them from their group; if they were the last member, the thesis is deleted too.
 - **`submission_details`** is a view that joins each submission with its review. A submission's status (`pending`, `approved`, `revisions_requested`) comes from its review, so status is never stored twice.
 - **`password_resets`** holds one-time reset links. Only a SHA-256 hash of each token is stored. A link expires after 1 hour and is deleted once used. No email service is set up yet, so outside production the reset link is printed in the server console and shown on the "Forgot password" page.
-- **Schema versioning:** `SCHEMA_VERSION` in `server/src/db/index.js` must be bumped whenever `schema.sql` changes.
+- **Changing the schema:** add the next numbered file to `server/src/db/migrations/` (for example `005_add_notifications.sql`). On the next start the server applies every migration above the database's current `PRAGMA user_version`, each in its own transaction, so a failed migration leaves the database on its last good version. Existing accounts, theses, and uploads are kept.
+- **Never edit a migration that has already run.** It has executed on real databases; correct it with a new file instead.
+- **`npm run db:seed` is for demo data only.** It deletes the database and every upload, and refuses to run when `NODE_ENV=production` unless `SEED_ALLOW_PRODUCTION=yes` is set.
 
 ## Project structure
 
@@ -191,7 +193,7 @@ Capstone/
     ├── data/                   # SQLite database file (git-ignored)
     ├── uploads/                # uploaded manuscripts (git-ignored)
     └── src/
-        ├── db/                 # connection, schema.sql, seed.js
+        ├── db/                 # connection, migrations/, seed.js
         ├── routes/             # URL → controller, with role middleware
         ├── controllers/        # request handling and validation
         ├── models/             # SQL queries, one file per table
@@ -230,7 +232,7 @@ Capstone/
 | `npm run dev`     | Starts the API (auto-reload) and the Vite dev server  |
 | `npm run build`   | Builds the website into `client/dist`                 |
 | `npm start`       | Runs the API and serves `client/dist` if it exists    |
-| `npm run db:seed` | Resets the database and uploads, then loads demo data |
+| `npm run db:seed` | Deletes the database and uploads, then loads demo data (development only) |
 | `npm run lint`    | Checks the code with ESLint                           |
 | `npm test`        | Runs the API tests (each on a throwaway database) and client tests |
 
