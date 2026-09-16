@@ -81,6 +81,18 @@ That is deliberate: people outside a thesis get 404, never 403, so they cannot c
 2. If you see "Something went wrong on this page", the error boundary caught it — `client/src/ui-pieces/basics/ErrorBoundary.jsx`. The real cause is in the console.
 3. A blank page with no message usually means the API returned something the page did not expect. Check the Network tab, then the matching file in `request-handlers/`.
 
+### "The browser smoke tests fail" (`npm run test:e2e`)
+
+They sign in as the demo student, adviser, and admin and open every page at desktop and phone size, on a
+freshly seeded throwaway database (port 3100). Your real database and `server/.env` aren't used.
+
+1. The failing step names the page and the reason: a crash, a console error, a server error, or sideways
+   scrolling on a phone.
+2. "Chrome not found": install Google Chrome. The tests use it instead of downloading a browser.
+3. "Port 3100 is already in use": a previous run is still going. Stop it and run again.
+4. In CI, the HTML report is attached to the failed run as `playwright-report`.
+5. Code: `client/e2e/smoke.spec.js`, `client/e2e/start-server.mjs`, `client/playwright.config.js`.
+
 ### "The server won't start"
 
 1. **"This database is at schema version N, but the code only knows up to M"** — your database is newer than your code. Pull the latest code.

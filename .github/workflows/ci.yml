@@ -35,3 +35,17 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # Opens every page as each role in Chrome, which GitHub's Ubuntu runners already have.
+      # Once is enough, so only on the newest Node.
+      - name: Browser smoke tests
+        if: matrix.node == '24'
+        run: npm run e2e -w client
+
+      - name: Keep the browser test report
+        if: failure() && matrix.node == '24'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: client/playwright-report/
+          retention-days: 7

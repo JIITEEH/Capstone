@@ -5,6 +5,10 @@ node_modules/
 dist/
 build/
 
+# Browser test output
+client/test-results/
+client/playwright-report/
+
 # Environment
 .env
 .env.*

@@ -331,6 +331,7 @@ Capstone/
 | `npm run db:backup` | Copies the database and uploads into `server/backups/`, then removes old ones |
 | `npm run lint`    | Checks the code with ESLint                           |
 | `npm test`        | Runs the API tests (each on a throwaway database) and client tests |
+| `npm run test:e2e` | Builds, then opens every page as each demo role in Chrome, at desktop and phone size. Needs Google Chrome |
 
 Every push and pull request to `main` or `development` runs lint, tests, and the build on GitHub Actions (`.github/workflows/ci.yml`).
 
