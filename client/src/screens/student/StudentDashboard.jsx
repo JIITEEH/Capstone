@@ -63,7 +63,7 @@ export default function StudentDashboard() {
         </DashboardHeader>
         <section className="dash-card">
           <div className="dash-card-head">
-            <h3>Your Thesis Journey</h3>
+            <h2>Your Thesis Journey</h2>
           </div>
           <p className="muted journey-intro">Each stage is reviewed by your adviser before you move on to the next one.</p>
           <StageTracker approvedKeys={[]} />

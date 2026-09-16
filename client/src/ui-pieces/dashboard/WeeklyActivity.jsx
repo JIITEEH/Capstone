@@ -34,7 +34,7 @@ export default function WeeklyActivity({ timestamps, title = 'Weekly Activity' }
   return (
     <section className="dash-card analytics">
       <div className="dash-card-head">
-        <h3>{title}</h3>
+        <h2>{title}</h2>
         <span className="dash-card-meta">{plural(total, 'update')} this week</span>
       </div>
       <div className="week-chart">

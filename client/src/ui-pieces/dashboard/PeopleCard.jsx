@@ -25,7 +25,7 @@ export default function PeopleCard({ title, action, people, emptyIcon, emptyTitl
   return (
     <section className="dash-card">
       <div className="dash-card-head">
-        <h3>{title}</h3>
+        <h2>{title}</h2>
         {action}
       </div>
       {people.length ? (

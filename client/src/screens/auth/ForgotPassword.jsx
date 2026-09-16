@@ -36,7 +36,7 @@ export default function ForgotPassword() {
     const devLink = result.devResetUrl ? new URL(result.devResetUrl) : null;
     return (
       <AuthLayout>
-        <h2>Check your email</h2>
+        <h1>Check your email</h1>
         <p className="muted">{result.message} The link expires in 1 hour.</p>
 
         {devLink && (
@@ -61,7 +61,7 @@ export default function ForgotPassword() {
 
   return (
     <AuthLayout>
-      <h2>Forgot your password?</h2>
+      <h1>Forgot your password?</h1>
       <p className="muted">Enter the email for your account and we'll send you a link to reset it.</p>
 
       <form className="form" onSubmit={handleSubmit}>

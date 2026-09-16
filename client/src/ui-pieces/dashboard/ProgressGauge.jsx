@@ -23,7 +23,7 @@ export default function ProgressGauge({ title, done, active, pending, caption, l
   return (
     <section className="dash-card gauge">
       <div className="dash-card-head">
-        <h3>{title}</h3>
+        <h2>{title}</h2>
       </div>
       <div
         className="gauge-figure"

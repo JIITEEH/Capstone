@@ -91,7 +91,7 @@ export default function Notifications() {
       {open && (
         <div className="notif-panel" role="dialog" aria-label="Reminders">
           <div className="notif-head">
-            <h3>Reminders</h3>
+            <h2>Reminders</h2>
             {events?.length > 0 && <span className="notif-count">{plural(events.length, 'upcoming event')}</span>}
           </div>
           {error && !events ? (

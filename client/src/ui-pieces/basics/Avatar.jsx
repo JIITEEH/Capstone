@@ -1,6 +1,7 @@
 import { initials } from '../../helpers/format.js';
 
-const COLORS = ['#2451d6', '#0f2a7a', '#3b6ff0', '#1a3a9c', '#4f63d8', '#1e4fb8', '#2c3e8f', '#5578e8'];
+// Each keeps white initials at 4.5:1 contrast or better
+const COLORS = ['#2451d6', '#0f2a7a', '#2f5fe3', '#1a3a9c', '#4f63d8', '#1e4fb8', '#2c3e8f', '#4164e0'];
 
 function colorFor(name = '') {
   let hash = 0;

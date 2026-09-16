@@ -43,7 +43,7 @@ export default function AdminControls({ thesis, onChanged }) {
   return (
     <section className="card">
       <div className="card-header">
-        <h3>Admin controls</h3>
+        <h2>Admin controls</h2>
       </div>
 
       <div className="form">

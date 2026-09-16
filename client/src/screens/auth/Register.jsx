@@ -29,7 +29,7 @@ export default function Register() {
 
   return (
     <AuthLayout>
-      <h2>Create a student account</h2>
+      <h1>Create a student account</h1>
       <p className="muted">Adviser and admin accounts are created by an administrator.</p>
 
       <form className="form" onSubmit={handleSubmit}>

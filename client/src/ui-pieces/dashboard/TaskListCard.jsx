@@ -14,7 +14,7 @@ export default function TaskListCard({ title, action, items, emptyIcon, emptyTit
   return (
     <section className="dash-card tasks">
       <div className="dash-card-head">
-        <h3>{title}</h3>
+        <h2>{title}</h2>
         {action}
       </div>
       {items.length ? (

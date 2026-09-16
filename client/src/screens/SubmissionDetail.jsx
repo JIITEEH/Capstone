@@ -82,9 +82,9 @@ function PreviousVersion({ previous, stageLabel, version }) {
   return (
     <section className="card previous-version">
       <div className="card-header">
-        <h3>
+        <h2>
           <History size={15} aria-hidden="true" /> What was asked for in version {version - 1}
-        </h3>
+        </h2>
         <Link to={`/submissions/${previous.id}`} className="card-link">
           Open version {version - 1}
         </Link>
@@ -129,7 +129,7 @@ function ReviewPanel({ submissionId, studentName, onReviewed }) {
   return (
     <section className="card review-panel">
       <div className="card-header">
-        <h3>Your review</h3>
+        <h2>Your review</h2>
       </div>
       <div className="form">
         <p className="muted">Decide whether {studentName} can move on to the next stage.</p>
@@ -315,7 +315,7 @@ export default function SubmissionDetail() {
 
           <section className="card">
             <div className="card-header">
-              <h3>Discussion</h3>
+              <h2>Discussion</h2>
               <span className="muted">{plural(comments.length, 'comment')}</span>
             </div>
             {comments.length ? (
@@ -386,7 +386,7 @@ export default function SubmissionDetail() {
 
           <section className="card">
             <div className="card-header">
-              <h3>Details</h3>
+              <h2>Details</h2>
             </div>
             <dl className="details">
               <div>

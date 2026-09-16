@@ -39,7 +39,7 @@ export default function ResetPassword() {
   if (!token) {
     return (
       <AuthLayout>
-        <h2>Reset link missing</h2>
+        <h1>Reset link missing</h1>
         <p className="muted">This page needs the link from your password reset email. Request a new one below.</p>
         <Link to="/forgot-password" className="btn btn-primary btn-block">
           Request a reset link
@@ -51,7 +51,7 @@ export default function ResetPassword() {
 
   return (
     <AuthLayout>
-      <h2>Set a new password</h2>
+      <h1>Set a new password</h1>
       <p className="muted">Choose a new password for your account.</p>
 
       <form className="form" onSubmit={handleSubmit}>

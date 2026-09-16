@@ -13,7 +13,7 @@
 
   --text: #0f1629;
   --text-secondary: #455069;
-  --text-muted: #6a7389;
+  --text-muted: #5f687d;
 
   --primary: #2451d6;
   --primary-hover: #1c42b8;
@@ -612,7 +612,7 @@ textarea {
   animation: pop-in 0.18s ease;
 }
 
-.notif-panel h3 {
+.notif-panel h2 {
   margin-bottom: 14px;
   font-size: 16px;
   font-weight: 600;
@@ -665,7 +665,7 @@ textarea {
   margin-bottom: 14px;
 }
 
-.notif-panel .notif-head h3 {
+.notif-panel .notif-head h2 {
   margin-bottom: 0;
 }
 
@@ -919,7 +919,7 @@ textarea {
   padding-bottom: 12px;
 }
 
-.card-header h3 {
+.card-header h2 {
   font-size: 15px;
   font-weight: 600;
 }
@@ -1034,12 +1034,13 @@ textarea {
 }
 
 .btn-success {
-  background: var(--success);
+  /* The brighter --success is 3.9:1 under white text */
+  background: var(--success-text);
   color: #fff;
 }
 
 .btn-success:hover:not(:disabled) {
-  background: var(--success-text);
+  background: #05603a;
 }
 
 .btn-warning {
@@ -2080,7 +2081,7 @@ a.bar-row:hover .bar-label {
   border-left: 3px solid var(--warning);
 }
 
-.previous-version .card-header h3 {
+.previous-version .card-header h2 {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -2272,6 +2273,8 @@ a.bar-row:hover .bar-label {
 .auth-page {
   --mx: 0.5;
   --my: 0.4;
+  /* The card's gradient darkens toward the bottom, where the default muted grey drops below 4.5:1 */
+  --text-muted: #4f586c;
   position: relative;
   display: grid;
   place-items: center;
@@ -2449,7 +2452,7 @@ a.bar-row:hover .bar-label {
   margin: auto;
 }
 
-.auth-card h2 {
+.auth-card h1 {
   font-size: 32px;
   font-weight: 500;
   letter-spacing: -0.02em;
@@ -2602,7 +2605,7 @@ a.bar-row:hover .bar-label {
     padding: 16px 12px 12px;
   }
 
-  .auth-card h2 {
+  .auth-card h1 {
     font-size: 26px;
   }
 
@@ -2882,8 +2885,14 @@ a.bar-row:hover .bar-label {
     font-size: 24px;
   }
 
+  /* Hidden visually but still read out, so the avatar-only link keeps a name */
   .user-chip-text {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   .form-row {
@@ -3829,7 +3838,7 @@ fieldset.field {
   margin-bottom: 18px;
 }
 
-.dash-card-head h3 {
+.dash-card-head h2 {
   font-size: 20px;
   font-weight: 500;
   letter-spacing: -0.02em;
@@ -3945,7 +3954,7 @@ fieldset.field {
 
 .kpi-featured {
   background:
-    radial-gradient(90% 110% at 0% 100%, rgba(130, 170, 255, 0.35), transparent 55%),
+    radial-gradient(90% 110% at 0% 100%, rgba(130, 170, 255, 0.18), transparent 55%),
     linear-gradient(135deg, #16338f 0%, #2451d6 55%, #4a78ee 100%);
   color: #fff;
 }
@@ -3964,7 +3973,7 @@ fieldset.field {
 }
 
 .kpi-featured .kpi-suffix {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .kpi-featured .kpi-arrow,
@@ -3975,7 +3984,8 @@ fieldset.field {
 }
 
 .kpi-featured .kpi-note {
-  color: #cddcff;
+  /* Anything dimmer than white falls under 4.5:1 on the lighter end of the gradient */
+  color: #fff;
 }
 
 /* Weekly activity chart */
@@ -4122,7 +4132,7 @@ fieldset.field {
 }
 
 /* The side column is narrow, so keep its heading on one line */
-.tasks .dash-card-head h3 {
+.tasks .dash-card-head h2 {
   min-width: 0;
   overflow: hidden;
   font-size: 18px;
@@ -4272,7 +4282,7 @@ a.people-row:hover {
 .status-active {
   border-color: #f1d49a;
   background: #fffaf0;
-  color: #a8680f;
+  color: #95600d;
 }
 
 .status-waiting {

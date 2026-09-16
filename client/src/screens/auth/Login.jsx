@@ -53,7 +53,7 @@ export default function Login() {
 
   return (
     <AuthLayout>
-      <h2>Welcome back</h2>
+      <h1>Welcome back</h1>
       <p className="muted">Sign in to continue to your thesis workspace</p>
 
       {location.state?.notice && <p className="form-success auth-notice">{location.state.notice}</p>}

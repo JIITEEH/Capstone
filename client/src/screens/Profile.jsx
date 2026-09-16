@@ -54,7 +54,7 @@ export default function Profile() {
         <div className="stack">
           <section className="card">
             <div className="card-header">
-              <h3>Account details</h3>
+              <h2>Account details</h2>
             </div>
             <form className="form" onSubmit={saveDetails}>
               <div className="field">
@@ -92,7 +92,7 @@ export default function Profile() {
 
           <section className="card">
             <div className="card-header">
-              <h3>Change password</h3>
+              <h2>Change password</h2>
             </div>
             <form className="form" onSubmit={savePassword}>
               <div className="field">

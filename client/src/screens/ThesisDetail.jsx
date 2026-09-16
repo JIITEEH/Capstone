@@ -119,7 +119,7 @@ export default function ThesisDetail({ thesisId, onLeft }) {
 
           <section className="card">
             <div className="card-header">
-              <h3>Progress</h3>
+              <h2>Progress</h2>
               <span className="muted">
                 {approved.length} of {STAGES.length} stages approved
               </span>
@@ -134,7 +134,7 @@ export default function ThesisDetail({ thesisId, onLeft }) {
 
           <section className="card">
             <div className="card-header">
-              <h3>Abstract</h3>
+              <h2>Abstract</h2>
             </div>
             {thesis.abstract ? <p className="prose">{thesis.abstract}</p> : <p className="muted">No abstract yet.</p>}
             {keywords.length > 0 && (
@@ -150,7 +150,7 @@ export default function ThesisDetail({ thesisId, onLeft }) {
 
           <section className="card card-flush">
             <div className="card-header card-pad">
-              <h3>Submissions</h3>
+              <h2>Submissions</h2>
               <span className="muted">{submissions.length} total</span>
             </div>
             {submissions.length ? (
@@ -193,7 +193,7 @@ export default function ThesisDetail({ thesisId, onLeft }) {
         <aside className="stack stagger">
           <section className="card">
             <div className="card-header">
-              <h3>People</h3>
+              <h2>People</h2>
             </div>
             <GroupMembers thesis={thesis} members={members} limit={groupLimit} onChanged={reload} onLeft={onLeft} />
             <div className="people group-adviser">
@@ -203,7 +203,7 @@ export default function ThesisDetail({ thesisId, onLeft }) {
 
           <section className="card">
             <div className="card-header">
-              <h3>Upcoming schedule</h3>
+              <h2>Upcoming schedule</h2>
               {canSchedule ? (
                 <button type="button" className="btn btn-secondary btn-sm" onClick={() => setModal('schedule')}>
                   <CalendarPlus size={14} />
@@ -222,7 +222,7 @@ export default function ThesisDetail({ thesisId, onLeft }) {
 
           <section className="card">
             <div className="card-header">
-              <h3>Activity</h3>
+              <h2>Activity</h2>
             </div>
             <ActivityFeed items={activity} />
           </section>
