@@ -1,5 +1,6 @@
 import { ROLES } from '../constants.js';
 import { transaction } from '../database/index.js';
+import * as Audit from '../database-queries/auditModel.js';
 import * as Submission from '../database-queries/submissionModel.js';
 import * as Thesis from '../database-queries/thesisModel.js';
 import * as User from '../database-queries/userModel.js';
@@ -34,7 +35,19 @@ export function createUser(req, res) {
 
   if (User.emailTaken(email)) throw new HttpError(409, 'An account with this email already exists');
 
-  res.status(201).json(User.create({ name, email, password, role, program }));
+  const created = transaction(() => {
+    const user = User.create({ name, email, password, role, program });
+    Audit.record({
+      actor: req.user,
+      action: 'user.created',
+      targetType: 'user',
+      targetId: user.id,
+      targetLabel: `${user.name} (${user.email})`,
+      details: `Role: ${role}`,
+    });
+    return user;
+  });
+  res.status(201).json(created);
 }
 
 export function updateUser(req, res) {
@@ -74,9 +87,31 @@ export function updateUser(req, res) {
     fields.is_active = active ? 1 : 0;
   }
 
-  if (body.password) User.setPassword(id, requirePassword(body.password));
+  const newPassword = body.password ? requirePassword(body.password) : null;
 
-  res.json(User.update(id, fields));
+  // What actually changed, compared with the stored account. A save that changes nothing logs nothing.
+  const label = `${existing.name} (${existing.email})`;
+  const entries = [];
+  const detailChanges = ['name', 'email', 'program']
+    .filter((key) => fields[key] !== undefined && fields[key] !== existing[key])
+    .map((key) => `${key}: "${existing[key] || '—'}" → "${fields[key] || '—'}"`);
+  if (detailChanges.length) entries.push({ action: 'user.details_changed', details: detailChanges.join('; ') });
+  if (fields.role !== undefined) entries.push({ action: 'user.role_changed', details: `${existing.role} → ${fields.role}` });
+  if (fields.is_active !== undefined && fields.is_active !== existing.is_active) {
+    entries.push({ action: fields.is_active ? 'user.reactivated' : 'user.deactivated' });
+  }
+  // Only that it happened. The password itself is never written to the log.
+  if (newPassword) entries.push({ action: 'user.password_set' });
+
+  const updated = transaction(() => {
+    if (newPassword) User.setPassword(id, newPassword);
+    const result = User.update(id, fields);
+    for (const entry of entries) {
+      Audit.record({ actor: req.user, targetType: 'user', targetId: id, targetLabel: label, ...entry });
+    }
+    return result;
+  });
+  res.json(updated);
 }
 
 export function deleteUser(req, res) {
@@ -96,6 +131,16 @@ export function deleteUser(req, res) {
     if (deletesThesis) Thesis.remove(thesis.id);
     else if (thesis) Thesis.removeMember(thesis.id, id);
     User.remove(id);
+    Audit.record({
+      actor: req.user,
+      action: 'user.deleted',
+      targetType: 'user',
+      targetId: id,
+      targetLabel: `${existing.name} (${existing.email})`,
+      details: deletesThesis
+        ? `Role: ${existing.role}. They were the last member of "${thesis.title}", so that thesis and its files were deleted too.`
+        : `Role: ${existing.role}`,
+    });
   });
   deleteStoredFiles(files);
   res.status(204).end();

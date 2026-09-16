@@ -13,6 +13,7 @@ import ResetPassword from './screens/auth/ResetPassword.jsx';
 const MyThesis = lazy(() => import('./screens/student/MyThesis.jsx'));
 const ThesesList = lazy(() => import('./screens/ThesesList.jsx'));
 const Users = lazy(() => import('./screens/admin/Users.jsx'));
+const AuditLog = lazy(() => import('./screens/admin/AuditLog.jsx'));
 const ThesisDetail = lazy(() => import('./screens/ThesisDetail.jsx'));
 const SubmissionDetail = lazy(() => import('./screens/SubmissionDetail.jsx'));
 const Schedule = lazy(() => import('./screens/Schedule.jsx'));
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="submissions/:id" element={<SubmissionDetail />} />
         <Route path="schedule" element={<Schedule />} />
         <Route path="users" element={<RequireRole roles={['admin']}><Users /></RequireRole>} />
+        <Route path="audit" element={<RequireRole roles={['admin']}><AuditLog /></RequireRole>} />
         <Route path="profile" element={<Profile />} />
         <Route path="*" element={<NotFound />} />
       </Route>

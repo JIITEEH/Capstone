@@ -1,6 +1,7 @@
 import { MAX_GROUP_SIZE, STAGES, THESIS_STATUSES } from '../constants.js';
 import { transaction } from '../database/index.js';
 import * as Activity from '../database-queries/activityModel.js';
+import * as Audit from '../database-queries/auditModel.js';
 import * as Schedule from '../database-queries/scheduleModel.js';
 import * as Submission from '../database-queries/submissionModel.js';
 import * as Thesis from '../database-queries/thesisModel.js';
@@ -90,6 +91,14 @@ export function assignAdviser(req, res) {
   const updated = transaction(() => {
     const result = Thesis.update(thesis.id, { adviser_id: adviser?.id ?? null });
     Activity.log(thesis.id, req.user.id, adviser ? `assigned ${adviser.name} as adviser` : 'removed the adviser');
+    Audit.record({
+      actor: req.user,
+      action: adviser ? 'thesis.adviser_assigned' : 'thesis.adviser_removed',
+      targetType: 'thesis',
+      targetId: thesis.id,
+      targetLabel: thesis.title,
+      details: `${thesis.adviser_name ?? 'No adviser'} → ${adviser?.name ?? 'No adviser'}`,
+    });
     return result;
   });
   res.json(updated);
@@ -102,6 +111,17 @@ export function updateStatus(req, res) {
   const updated = transaction(() => {
     const result = Thesis.update(thesis.id, { status });
     Activity.log(thesis.id, req.user.id, `changed the status to ${THESIS_STATUSES[status]}`);
+    // An override replaces the status the reviews produced, so it is worth a permanent record
+    if (status !== thesis.status) {
+      Audit.record({
+        actor: req.user,
+        action: 'thesis.status_overridden',
+        targetType: 'thesis',
+        targetId: thesis.id,
+        targetLabel: thesis.title,
+        details: `${THESIS_STATUSES[thesis.status]} → ${THESIS_STATUSES[status]}`,
+      });
+    }
     return result;
   });
   res.json(updated);
@@ -110,7 +130,17 @@ export function updateStatus(req, res) {
 export function deleteThesis(req, res) {
   const thesis = getAccessibleThesis(req.user, req.params.id);
   const files = Submission.storedNamesForThesis(thesis.id);
-  Thesis.remove(thesis.id);
+  transaction(() => {
+    Thesis.remove(thesis.id);
+    Audit.record({
+      actor: req.user,
+      action: 'thesis.deleted',
+      targetType: 'thesis',
+      targetId: thesis.id,
+      targetLabel: thesis.title,
+      details: `${files.length} uploaded file${files.length === 1 ? '' : 's'} removed`,
+    });
+  });
   deleteStoredFiles(files);
   res.status(204).end();
 }

@@ -138,6 +138,9 @@ export const api = {
   updateSchedule: (id, data) => request(`/schedules/${id}`, { method: 'PATCH', body: data }),
   deleteSchedule: (id) => request(`/schedules/${id}`, { method: 'DELETE' }),
 
+  // Audit log (admin): newest first; pass `before` from the previous page to go further back
+  listAudit: (params) => request(`/audit${toQuery(params)}`),
+
   // Users (admin)
   listUsers: (params) => request(`/users${toQuery(params)}`),
   listAdvisers: () => request('/users/advisers'),

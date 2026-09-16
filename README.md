@@ -54,6 +54,7 @@ Every rule below is enforced by the API. The UI also hides what a role can't use
 | Assign advisers, override status, delete theses | —                    | —                                | ✅                           |
 | Search theses, people, and submissions    | Own group, adviser, and work | Advisees and their work        | All                          |
 | Manage users                              | —                          | —                                | ✅                           |
+| View the audit log of admin changes       | —                          | —                                | ✅                           |
 
 Users who try to open something outside their role get a 403 (wrong role) or 404 (a record they aren't allowed to see).
 

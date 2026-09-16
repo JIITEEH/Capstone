@@ -1,5 +1,16 @@
 import { Link, NavLink } from 'react-router';
-import { BookOpen, CalendarDays, CalendarPlus, LayoutDashboard, Library, LogOut, UserRound, Users, X } from 'lucide-react';
+import {
+  BookOpen,
+  CalendarDays,
+  CalendarPlus,
+  LayoutDashboard,
+  Library,
+  LogOut,
+  ScrollText,
+  UserRound,
+  Users,
+  X,
+} from 'lucide-react';
 import { useAuth } from '../../shared-state/AuthContext.jsx';
 
 // Each role only sees the features it can use
@@ -19,6 +30,7 @@ const NAV_BY_ROLE = {
     { to: '/theses', label: 'All Theses', icon: Library },
     { to: '/schedule', label: 'Schedule', icon: CalendarDays },
     { to: '/users', label: 'Users', icon: Users },
+    { to: '/audit', label: 'Audit log', icon: ScrollText },
   ],
 };
 

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireRole } from '../request-filters/auth.js';
+import auditRoutes from './auditRoutes.js';
 import authRoutes from './authRoutes.js';
 import dashboardRoutes from './dashboardRoutes.js';
 import scheduleRoutes from './scheduleRoutes.js';
@@ -21,5 +22,6 @@ router.use('/submissions', requireAuth, submissionRoutes);
 router.use('/schedules', requireAuth, scheduleRoutes);
 router.use('/search', requireAuth, searchRoutes);
 router.use('/users', requireAuth, requireRole('admin'), userRoutes);
+router.use('/audit', requireAuth, requireRole('admin'), auditRoutes);
 
 export default router;
