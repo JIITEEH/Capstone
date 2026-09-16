@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { Library, Search } from 'lucide-react';
+import { Download, Library, Search } from 'lucide-react';
 import { ThesisStatusBadge } from '../ui-pieces/basics/Badge.jsx';
 import { EmptyState, LoadState, Spinner } from '../ui-pieces/basics/Feedback.jsx';
 import PageHeader from '../ui-pieces/basics/PageHeader.jsx';
 import { ProgressBar } from '../ui-pieces/basics/StageTracker.jsx';
 import { useAuth } from '../shared-state/AuthContext.jsx';
+import { useToast } from '../shared-state/ToastContext.jsx';
 import useApi from '../reusable-logic/useApi.js';
 import { api } from '../api-client/api.js';
 import { STAGES, THESIS_STATUS } from '../helpers/constants.js';
@@ -46,11 +47,34 @@ export default function ThesesList() {
 
   const hasFilters = Boolean(status || adviser || search);
 
+  const toast = useToast();
+  const [exporting, setExporting] = useState(false);
+
+  // Exports exactly what is on screen: the same filters and search
+  async function exportCsv() {
+    setExporting(true);
+    try {
+      await api.exportTheses({ status, adviser, search });
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <>
       <PageHeader
         title={isAdmin ? 'All theses' : 'My advisees'}
         subtitle={isAdmin ? 'Search, filter, and manage every thesis.' : 'Theses you have been assigned to advise.'}
+        actions={
+          isAdmin && (
+            <button type="button" className="btn btn-secondary" onClick={exportCsv} disabled={exporting}>
+              <Download size={16} />
+              {exporting ? 'Preparing…' : 'Export CSV'}
+            </button>
+          )
+        }
       />
 
       <section className="card card-flush">

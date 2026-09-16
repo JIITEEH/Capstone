@@ -69,6 +69,26 @@ async function request(path, { method = 'GET', body, raw = false } = {}) {
   return data;
 }
 
+// Hands a downloaded file to the browser's save dialog
+function saveBlob(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// A CSV export, saved under the dated filename the server chose
+async function downloadExport(path) {
+  const res = await request(path, { raw: true });
+  const disposition = res.headers.get('Content-Disposition') ?? '';
+  const fileName = /filename="([^"]+)"/.exec(disposition)?.[1] ?? 'export.csv';
+  saveBlob(await res.blob(), fileName);
+}
+
 function toQuery(params = {}) {
   const query = new URLSearchParams(Object.entries(params).filter(([, value]) => value !== '' && value != null));
   const text = query.toString();
@@ -99,6 +119,7 @@ export const api = {
 
   // Theses
   listTheses: (params) => request(`/theses${toQuery(params)}`),
+  exportTheses: (params) => downloadExport(`/theses/export.csv${toQuery(params)}`),
   getThesis: (id) => request(`/theses/${id}`),
   createThesis: (data) => request('/theses', { method: 'POST', body: data }),
   updateThesis: (id, data) => request(`/theses/${id}`, { method: 'PATCH', body: data }),
@@ -122,14 +143,7 @@ export const api = {
   },
   async downloadSubmission(id, fileName) {
     const res = await request(`/submissions/${id}/file`, { raw: true });
-    const url = URL.createObjectURL(await res.blob());
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName || 'manuscript';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    saveBlob(await res.blob(), fileName || 'manuscript');
   },
 
   // Schedules
@@ -144,6 +158,7 @@ export const api = {
   // Users (admin)
   listUsers: (params) => request(`/users${toQuery(params)}`),
   listAdvisers: () => request('/users/advisers'),
+  exportAdviserWorkload: () => downloadExport('/users/advisers/export.csv'),
   createUser: (data) => request('/users', { method: 'POST', body: data }),
   updateUser: (id, data) => request(`/users/${id}`, { method: 'PATCH', body: data }),
   deleteUser: (id) => request(`/users/${id}`, { method: 'DELETE' }),

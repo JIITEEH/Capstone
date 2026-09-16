@@ -4,6 +4,7 @@ import * as Audit from '../database-queries/auditModel.js';
 import * as Submission from '../database-queries/submissionModel.js';
 import * as Thesis from '../database-queries/thesisModel.js';
 import * as User from '../database-queries/userModel.js';
+import { sendCsv, toCsv } from '../helpers/csv.js';
 import { deleteStoredFiles } from '../helpers/files.js';
 import { HttpError } from '../helpers/httpError.js';
 import {
@@ -23,6 +24,21 @@ export function listUsers(req, res) {
 
 export function listAdvisers(req, res) {
   res.json(User.listAdvisers());
+}
+
+// Active advisers with their load, for balancing assignments and for department reports
+export function exportAdviserWorkload(req, res) {
+  const csv = toCsv(
+    [
+      { header: 'Adviser', value: (u) => u.name },
+      { header: 'Email', value: (u) => u.email },
+      { header: 'Department', value: (u) => u.program },
+      { header: 'Advisees', value: (u) => u.advisee_count },
+      { header: 'Waiting for review', value: (u) => u.pending_count },
+    ],
+    User.listAdvisers(),
+  );
+  sendCsv(res, 'adviser-workload', csv);
 }
 
 export function createUser(req, res) {

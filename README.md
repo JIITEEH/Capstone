@@ -55,6 +55,7 @@ Every rule below is enforced by the API. The UI also hides what a role can't use
 | Search theses, people, and submissions    | Own group, adviser, and work | Advisees and their work        | All                          |
 | Manage users                              | —                          | —                                | ✅                           |
 | View the audit log of admin changes       | —                          | —                                | ✅                           |
+| Export theses and adviser workload to CSV | —                          | —                                | ✅                           |
 
 Users who try to open something outside their role get a 403 (wrong role) or 404 (a record they aren't allowed to see).
 

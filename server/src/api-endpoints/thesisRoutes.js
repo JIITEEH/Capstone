@@ -5,6 +5,7 @@ import {
   createSubmission,
   createThesis,
   deleteThesis,
+  exportTheses,
   getThesis,
   listTheses,
   removeMember,
@@ -19,6 +20,8 @@ const router = Router();
 // Role scoping for reads and edits happens in the controller via services/access.js
 router.get('/', listTheses);
 router.post('/', requireRole('student'), createThesis);
+// Before /:id, or "export.csv" would be read as a thesis id
+router.get('/export.csv', requireRole('admin'), exportTheses);
 router.get('/:id', getThesis);
 // Thesis content belongs to the student; admins manage assignment, status, and deletion
 router.patch('/:id', requireRole('student'), updateThesis);

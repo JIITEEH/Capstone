@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { Pencil, Search, Trash2, UserPlus, Users as UsersIcon } from 'lucide-react';
+import { Download, Pencil, Search, Trash2, UserPlus, Users as UsersIcon } from 'lucide-react';
 import Avatar from '../../ui-pieces/basics/Avatar.jsx';
 import { Badge, RoleBadge } from '../../ui-pieces/basics/Badge.jsx';
 import { EmptyState, LoadState, Spinner } from '../../ui-pieces/basics/Feedback.jsx';
@@ -144,6 +144,18 @@ export default function Users() {
 
   const { data: users, loading, error, reload } = useApi(() => api.listUsers({ role, search }), [role, search]);
 
+  const [exporting, setExporting] = useState(false);
+  async function exportWorkload() {
+    setExporting(true);
+    try {
+      await api.exportAdviserWorkload();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   async function confirmDelete() {
     setDeleteState({ busy: true, error: '' });
     try {
@@ -163,10 +175,16 @@ export default function Users() {
         title="Users"
         subtitle="Create accounts for advisers and admins, and manage every user's access."
         actions={
-          <button type="button" className="btn btn-primary" onClick={() => setEditing('new')}>
-            <UserPlus size={16} />
-            Add user
-          </button>
+          <>
+            <button type="button" className="btn btn-secondary" onClick={exportWorkload} disabled={exporting}>
+              <Download size={16} />
+              {exporting ? 'Preparing…' : 'Export adviser workload'}
+            </button>
+            <button type="button" className="btn btn-primary" onClick={() => setEditing('new')}>
+              <UserPlus size={16} />
+              Add user
+            </button>
+          </>
         }
       />
 

@@ -7,6 +7,7 @@ import * as Submission from '../database-queries/submissionModel.js';
 import * as Thesis from '../database-queries/thesisModel.js';
 import * as User from '../database-queries/userModel.js';
 import { canManageGroup, getAccessibleThesis, withSchedulePermissions } from '../permission-rules/access.js';
+import { sendCsv, toCsv } from '../helpers/csv.js';
 import { deleteStoredFiles } from '../helpers/files.js';
 import { HttpError } from '../helpers/httpError.js';
 import { oneOf, optionalText, parseId, queryString, requireEmail, requireText } from '../helpers/validate.js';
@@ -19,7 +20,8 @@ function readThesisFields(body, { partial }) {
   return fields;
 }
 
-export function listTheses(req, res) {
+// Shared by the list and its CSV export, so a download always matches what is on screen
+function thesisFilters(req) {
   const { user } = req;
   const status = THESIS_STATUSES[req.query.status] ? req.query.status : undefined;
   const filters = { status, search: queryString(req.query.search) };
@@ -30,8 +32,37 @@ export function listTheses(req, res) {
     if (req.query.adviser === 'unassigned') filters.unassigned = true;
     else if (Number(req.query.adviser) > 0) filters.adviserId = Number(req.query.adviser);
   }
+  return filters;
+}
 
-  res.json(Thesis.list(filters));
+export function listTheses(req, res) {
+  res.json(Thesis.list(thesisFilters(req)));
+}
+
+// The first stage not yet approved is the one the group is working on
+function currentStage(thesis) {
+  const approved = new Set((thesis.approved_stage_keys ?? '').split(',').filter(Boolean));
+  const next = Object.keys(STAGES).find((key) => !approved.has(key));
+  return next ? STAGES[next] : 'All stages approved';
+}
+
+export function exportTheses(req, res) {
+  const csv = toCsv(
+    [
+      { header: 'Title', value: (t) => t.title },
+      { header: 'Students', value: (t) => t.student_name },
+      { header: 'Program', value: (t) => t.student_program },
+      { header: 'Adviser', value: (t) => t.adviser_name ?? 'Not assigned' },
+      { header: 'Current stage', value: currentStage },
+      { header: 'Stages approved', value: (t) => `${t.approved_stages} of ${Object.keys(STAGES).length}` },
+      { header: 'Status', value: (t) => THESIS_STATUSES[t.status] ?? t.status },
+      { header: 'Keywords', value: (t) => t.keywords },
+      { header: 'Started', value: (t) => t.created_at },
+      { header: 'Last updated', value: (t) => t.updated_at },
+    ],
+    Thesis.list(thesisFilters(req)),
+  );
+  sendCsv(res, 'theses', csv);
 }
 
 export function createThesis(req, res) {
