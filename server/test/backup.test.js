@@ -61,6 +61,21 @@ describe('making a backup', () => {
     assert.deepEqual(userNames(path.join(folder, 'app.db')), ['Ana Cruz', 'Ben Reyes']);
   });
 
+  it('makes a second backup in the same second instead of failing', () => {
+    const system = makeSystem();
+    const date = new Date('2026-09-16T10:00:00Z');
+
+    const first = createBackup({ ...system, date });
+    const second = createBackup({ ...system, date });
+    const third = createBackup({ ...system, date });
+
+    assert.equal(path.basename(first.folder), '2026-09-16T10-00-00');
+    assert.equal(path.basename(second.folder), '2026-09-16T10-00-00-2');
+    assert.equal(path.basename(third.folder), '2026-09-16T10-00-00-3');
+    assert.equal(listBackups(system.backupDir).length, 3, 'all three are real backups');
+    assert.ok(fs.existsSync(path.join(second.folder, 'app.db')));
+  });
+
   it('refuses when there is no database to back up', () => {
     const system = makeSystem();
     fs.rmSync(system.databasePath);

@@ -47,9 +47,12 @@ export function createBackup({
     throw new Error(`There is no database at ${databasePath}, so there is nothing to back up.`);
   }
 
-  const folder = path.join(backupDir, backupName(date));
-  if (fs.existsSync(folder)) {
-    throw new Error(`A backup already exists at ${folder}.`);
+  // Names are second-resolution, so two runs in the same second would collide. Take the next
+  // free name instead of failing: someone running the command twice should get two backups.
+  const base = path.join(backupDir, backupName(date));
+  let folder = base;
+  for (let attempt = 2; fs.existsSync(folder); attempt += 1) {
+    folder = `${base}-${attempt}`;
   }
   fs.mkdirSync(folder, { recursive: true });
 
