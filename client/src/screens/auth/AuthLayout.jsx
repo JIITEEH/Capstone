@@ -1,15 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { GraduationCap, UserRound } from 'lucide-react';
-
-// Decorative avatars on the right panel. They're plain silhouettes on purpose: initials here
-// looked like real accounts and went stale whenever the demo data changed.
-const PEOPLE = [
-  { id: 1, className: 'auth-person-1', size: 38 },
-  { id: 2, className: 'auth-person-2', size: 34 },
-  { id: 3, className: 'auth-person-3', size: 28 },
-];
-
-const STACK = [1, 2, 3, 4];
+import { GraduationCap } from 'lucide-react';
 
 // Eases --mx/--my on the page toward the cursor, which drives the liquid background and glass shine
 function useLiquidPointer(ref) {
@@ -70,49 +60,8 @@ export default function AuthLayout({ children }) {
           </footer>
         </main>
 
-        <aside className="auth-visual" aria-hidden="true">
-          <div className="auth-orb auth-orb-1" />
-          <div className="auth-orb auth-orb-2" />
-
-          <div className="auth-event">
-            <div className="auth-event-card">
-              <strong>Proposal Defense</strong>
-              <span>09:30am – 10:00am</span>
-              <i className="auth-dot" />
-            </div>
-            <div className="auth-event-ghost">
-              <span>09:30am – 10:00am</span>
-              <i className="auth-dot auth-dot-light" />
-            </div>
-          </div>
-
-          <div className="auth-visual-row">
-            <div className="auth-meeting">
-              <strong>Adviser Consultation</strong>
-              <span>12:00pm – 01:00pm</span>
-              <i className="auth-dot" />
-              <div className="auth-stack">
-                {STACK.map((id) => (
-                  <span key={id}>
-                    <UserRound size={16} />
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="auth-people">
-              {PEOPLE.map(({ id, className, size }) => (
-                <span key={id} className={`auth-person ${className}`}>
-                  <UserRound size={size} />
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="auth-visual-copy">
-            <h1>Your thesis, from proposal to final defense.</h1>
-            <p>Submit manuscripts, get adviser feedback, and track every stage in one place.</p>
-          </div>
-        </aside>
+        {/* Plain blue panel: no floating cards, no avatars, nothing to go stale */}
+        <aside className="auth-visual" aria-hidden="true" />
       </div>
     </div>
   );
