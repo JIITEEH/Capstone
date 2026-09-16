@@ -1437,7 +1437,17 @@ select.input {
 /* ==========================================================================
    Tables
    ========================================================================== */
+/* A shadow on the right edge while there is more table to scroll to, so a phone user
+   can tell the row continues past the screen instead of assuming it is cut off. */
 .table-wrap {
+  background:
+    linear-gradient(to right, var(--surface) 30%, transparent),
+    linear-gradient(to left, var(--surface) 30%, transparent) 100% 0,
+    radial-gradient(farthest-side at 0 50%, rgba(15, 22, 41, 0.14), transparent),
+    radial-gradient(farthest-side at 100% 50%, rgba(15, 22, 41, 0.14), transparent) 100% 0;
+  background-repeat: no-repeat;
+  background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+  background-attachment: local, local, scroll, scroll;
   overflow-x: auto;
 }
 
@@ -4366,5 +4376,98 @@ a.people-row:hover {
     animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==========================================================================
+   Touch input
+   --------------------------------------------------------------------------
+   Last in the file on purpose: these override sizes set earlier, and same-
+   specificity rules are decided by source order.
+
+   Matched by input device rather than screen width, because an iPad in
+   landscape is 1194px wide and still driven by a finger. A fingertip covers
+   roughly 9mm, so controls get at least 44px and the smallest text moves to
+   12px. A mouse keeps the compact desktop sizes.
+   ========================================================================== */
+@media (pointer: coarse) {
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* The top bar is a flex row; without this the menu button is squeezed narrow */
+  .icon-btn.topbar-menu {
+    flex-shrink: 0;
+    min-width: 44px;
+  }
+
+  .pill-btn {
+    height: 44px;
+    padding: 0 18px;
+  }
+
+  .btn-sm {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+
+  .segmented button {
+    min-height: 44px;
+    padding: 10px 18px;
+  }
+
+  .search-input {
+    min-height: 44px;
+  }
+
+  .search-input input,
+  .toolbar .input {
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .password-toggle {
+    width: 44px;
+    height: 44px;
+    right: 7px;
+  }
+
+  .auth-card .password-input .input {
+    padding-right: 60px;
+  }
+
+  .checkbox input {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Links sitting in a line of text: "View all", "Join meeting", "My advisees".
+     Padding gives the finger room without moving the text itself. */
+  .card-link,
+  .back-link,
+  .event-meta-item a,
+  .event-thesis a,
+  .demo-accounts > summary,
+  .auth-switch a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* Nothing readable below 12px on a handheld screen */
+  .event-date span,
+  .person-label,
+  .kpi-chip,
+  .status-pill,
+  .next-event .next-event-label,
+  .week-pill,
+  .notif-badge,
+  .ring-label,
+  .badge,
+  .chip,
+  .small,
+  .nav-label {
+    font-size: max(12px, 1em);
   }
 }
