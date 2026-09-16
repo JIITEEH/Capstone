@@ -6,9 +6,11 @@ import cors from 'cors';
 import config from './config/index.js';
 import routes from './routes/index.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
+import { securityHeaders } from './middleware/securityHeaders.js';
 
 const app = express();
 
+app.use(securityHeaders);
 app.use(cors({ origin: config.clientOrigin }));
 app.use(express.json());
 

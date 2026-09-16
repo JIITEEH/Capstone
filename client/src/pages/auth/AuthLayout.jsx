@@ -1,14 +1,15 @@
 import { useEffect, useRef } from 'react';
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, UserRound } from 'lucide-react';
 
-// Decorative people on the right panel; initials stand in for photos
+// Decorative avatars on the right panel. They're plain silhouettes on purpose: initials here
+// looked like real accounts and went stale whenever the demo data changed.
 const PEOPLE = [
-  { initials: 'MS', className: 'auth-person-1' },
-  { initials: 'AC', className: 'auth-person-2' },
-  { initials: 'JR', className: 'auth-person-3' },
+  { id: 1, className: 'auth-person-1', size: 38 },
+  { id: 2, className: 'auth-person-2', size: 34 },
+  { id: 3, className: 'auth-person-3', size: 28 },
 ];
 
-const STACK = ['AC', 'MS', 'LM', 'BL'];
+const STACK = [1, 2, 3, 4];
 
 // Eases --mx/--my on the page toward the cursor, which drives the liquid background and glass shine
 function useLiquidPointer(ref) {
@@ -91,15 +92,17 @@ export default function AuthLayout({ children }) {
               <span>12:00pm – 01:00pm</span>
               <i className="auth-dot" />
               <div className="auth-stack">
-                {STACK.map((initials) => (
-                  <span key={initials}>{initials}</span>
+                {STACK.map((id) => (
+                  <span key={id}>
+                    <UserRound size={16} />
+                  </span>
                 ))}
               </div>
             </div>
             <div className="auth-people">
-              {PEOPLE.map(({ initials, className }) => (
-                <span key={initials} className={`auth-person ${className}`}>
-                  {initials}
+              {PEOPLE.map(({ id, className, size }) => (
+                <span key={id} className={`auth-person ${className}`}>
+                  <UserRound size={size} />
                 </span>
               ))}
             </div>

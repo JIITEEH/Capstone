@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { CalendarDays, Menu, Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import Avatar from '../ui/Avatar.jsx';
+import ErrorBoundary from '../ui/ErrorBoundary.jsx';
 import { SkeletonPage } from '../ui/Feedback.jsx';
 import Notifications from './Notifications.jsx';
 import Sidebar from './Sidebar.jsx';
@@ -84,12 +85,15 @@ export default function AppLayout() {
         </header>
 
         <main className="page">
-          <Suspense fallback={<SkeletonPage />}>
-            {/* Keyed by path so each page plays its entrance animation */}
-            <div key={location.pathname} className="page-enter">
-              <Outlet />
-            </div>
-          </Suspense>
+          {/* Keyed by path so each page plays its entrance animation, and so moving to
+              another page clears a crash instead of keeping the error screen */}
+          <ErrorBoundary key={location.pathname}>
+            <Suspense fallback={<SkeletonPage />}>
+              <div className="page-enter">
+                <Outlet />
+              </div>
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
     </div>

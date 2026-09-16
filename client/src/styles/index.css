@@ -1203,6 +1203,14 @@ textarea {
   margin-top: 12px;
 }
 
+/* Side-by-side buttons in an empty or error state, stacking when there's no room */
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
 .empty-icon {
   display: grid;
   place-items: center;
