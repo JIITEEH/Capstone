@@ -18,6 +18,9 @@ const config = {
   // Where "npm run db:backup" writes, and how long a backup is kept
   backupDir: path.resolve(serverRoot, process.env.BACKUP_DIR || './backups'),
   backupKeepDays: Number(process.env.BACKUP_KEEP_DAYS) || 14,
+  // An rclone destination such as "gdrive:thesistrack-backups". Empty means local backups only,
+  // which do not survive losing the machine.
+  backupRemote: process.env.BACKUP_REMOTE || '',
   jwtSecret: process.env.JWT_SECRET || 'dev-only-secret-change-me',
   // "Keep me signed in" gets the longer session
   jwtExpiresIn: '12h',

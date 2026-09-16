@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, describe, it } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
-import { backupName, createBackup, listBackups, pruneBackups, restoreBackup } from '../src/database/backup.js';
+import { backupName, createBackup, listBackups, pruneBackups, restoreBackup, syncToRemote } from '../src/database/backup.js';
 import { migrate } from '../src/database/migrate.js';
 
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'thesistrack-backup-'));
@@ -144,6 +144,68 @@ describe('restoring a backup', () => {
     const notABackup = path.join(scratch, 'not-a-backup');
     fs.mkdirSync(notABackup, { recursive: true });
     assert.throws(() => restoreBackup(notABackup, system), /does not look like a backup/);
+  });
+});
+
+describe('copying a backup off the machine', () => {
+  it('calls rclone with the backup folder and a matching destination', () => {
+    const calls = [];
+    const result = syncToRemote({
+      folder: '/var/app/backups/2026-09-16T02-30-00',
+      remote: 'gdrive:thesistrack-backups',
+      run: (cmd, args) => {
+        calls.push([cmd, args]);
+        return { status: 0 };
+      },
+    });
+
+    assert.deepEqual(calls, [
+      [
+        'rclone',
+        ['copy', '/var/app/backups/2026-09-16T02-30-00', 'gdrive:thesistrack-backups/2026-09-16T02-30-00', '--checksum'],
+      ],
+    ]);
+    assert.equal(result.copiedTo, 'gdrive:thesistrack-backups/2026-09-16T02-30-00');
+  });
+
+  it('does nothing when no remote is configured', () => {
+    let ran = false;
+    const result = syncToRemote({ folder: '/tmp/backup', remote: '', run: () => { ran = true; return { status: 0 }; } });
+
+    assert.equal(ran, false, 'rclone is never called without a destination');
+    assert.match(result.skipped, /BACKUP_REMOTE/);
+  });
+
+  it('says so plainly when rclone is missing, without failing the local backup', () => {
+    const result = syncToRemote({
+      folder: '/tmp/backup',
+      remote: 'gdrive:backups',
+      run: () => ({ error: Object.assign(new Error('spawn rclone ENOENT'), { code: 'ENOENT' }) }),
+    });
+
+    assert.match(result.failed, /not installed/);
+    assert.ok(!result.copiedTo);
+  });
+
+  it('reports what rclone complained about', () => {
+    const result = syncToRemote({
+      folder: '/tmp/backup',
+      remote: 'gdrive:backups',
+      run: () => ({ status: 1, stderr: 'ERROR: didn\'t find section in config file\n' }),
+    });
+
+    assert.match(result.failed, /didn't find section in config file/);
+  });
+
+  it('tolerates a trailing slash on the destination', () => {
+    const calls = [];
+    syncToRemote({
+      folder: '/var/backups/2026-09-16T02-30-00',
+      remote: 'b2:thesis-backups/',
+      run: (cmd, args) => { calls.push(args[2]); return { status: 0 }; },
+    });
+
+    assert.equal(calls[0], 'b2:thesis-backups/2026-09-16T02-30-00', 'no doubled slash');
   });
 });
 

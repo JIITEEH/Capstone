@@ -13,6 +13,7 @@
 //     manifest.json   what was in it, for checking a backup before trusting it
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import config from '../config/index.js';
@@ -168,6 +169,31 @@ export function restoreBackup(folder, {
   return { restoredFrom: folder, replaced };
 }
 
+// Copies one backup folder off the machine with rclone, which talks to Google Drive, Backblaze
+// B2, Dropbox, and most other storage. Local backups survive a mistake or a corrupted file; only
+// an off-machine copy survives losing the machine itself.
+//
+// `run` is injectable so the tests can check the command without needing rclone installed.
+export function syncToRemote({
+  folder,
+  remote = config.backupRemote,
+  run = (cmd, args) => spawnSync(cmd, args, { encoding: 'utf8' }),
+} = {}) {
+  if (!remote) return { skipped: 'no BACKUP_REMOTE set' };
+
+  const destination = `${remote.replace(/\/+$/, '')}/${path.basename(folder)}`;
+  const result = run('rclone', ['copy', folder, destination, '--checksum']);
+
+  if (result.error?.code === 'ENOENT') {
+    return { failed: 'rclone is not installed, so the backup stayed on this machine', destination };
+  }
+  if (result.status !== 0) {
+    const detail = (result.stderr || result.stdout || '').trim().split('\n').at(-1) ?? `exit code ${result.status}`;
+    return { failed: detail, destination };
+  }
+  return { copiedTo: destination };
+}
+
 function mb(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
@@ -220,6 +246,17 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const removed = pruneBackups();
     if (removed.length > 0) {
       console.log(`  Removed ${removed.length} backup(s) older than ${config.backupKeepDays} days: ${removed.join(', ')}`);
+    }
+
+    const sync = syncToRemote({ folder });
+    if (sync.copiedTo) {
+      console.log(`  Copied off this machine to ${sync.copiedTo}`);
+    } else if (sync.failed) {
+      // The local backup worked, so this is a warning, not a failure
+      console.warn(`  Could not copy off this machine: ${sync.failed}`);
+      console.warn('  The backup is safe on this disk, but not if the machine is lost.');
+    } else {
+      console.log('  Kept on this machine only. Set BACKUP_REMOTE to copy it off (see README).');
     }
   }
 }

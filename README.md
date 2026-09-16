@@ -253,6 +253,7 @@ Every push and pull request to `main` or `development` runs lint, tests, and the
 
   ```
   30 2 * * * cd /path/to/Capstone && /usr/local/bin/npm run db:backup >> server/backups/backup.log 2>&1
+  # one run makes the backup, prunes old ones, and copies the new one off the machine
   ```
 
   **To restore**, stop the server, then:
@@ -263,5 +264,22 @@ Every push and pull request to `main` or `development` runs lint, tests, and the
   npm start                                                     # start again
   ```
 
-  Restoring sets the current database and uploads aside first (`app.db.replaced-<time>`), so restoring the wrong backup can itself be undone. **Backups sit on the same disk as the data**, which protects against mistakes and corruption but not against losing the machine: copy `server/backups/` somewhere else regularly.
+  Restoring sets the current database and uploads aside first (`app.db.replaced-<time>`), so restoring the wrong backup can itself be undone.
+
+- **Copy backups off the machine.** A backup on the same disk survives a mistake or a corrupted file, but not a lost, stolen, or dead machine. Set `BACKUP_REMOTE` in `server/.env` and each new backup is copied out with [rclone](https://rclone.org), which talks to Google Drive, Backblaze B2, Dropbox, OneDrive, and most other storage.
+
+  ```bash
+  brew install rclone     # once
+  rclone config           # once: choose your storage and sign in
+  ```
+
+  Then in `server/.env`:
+
+  ```
+  BACKUP_REMOTE=gdrive:thesistrack-backups
+  ```
+
+  where `gdrive` is the name you gave the remote during `rclone config`. Check it works with `rclone lsd gdrive:`. If rclone is missing or misconfigured the local backup still succeeds and the run prints a warning, so a broken remote never costs you the backup you did make.
+
+  **Free storage that suits this:** Google Drive gives 15 GB and you likely have an account already; Backblaze B2 gives 10 GB and is built for backups; Mega gives 20 GB. A year of this project's data is measured in megabytes, so any of them is ample.
 - Uploads are accepted by **content, not by file name**. After a file is written, its first bytes must match its extension (`%PDF-` for PDF, the OLE2 signature for DOC, the ZIP signature for DOCX). Anything else is deleted right away and the student gets a message explaining what to re-export. The server also renames every upload, so a file name can never become a path or a script.
