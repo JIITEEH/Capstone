@@ -6,6 +6,23 @@ import * as User from '../src/models/userModel.js';
 
 export const PASSWORD = 'password123';
 
+// First bytes of each file type the server accepts, so test uploads look like real documents
+export const SIGNATURES = {
+  '.pdf': Buffer.from('%PDF-1.7\n'),
+  '.doc': Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]),
+  '.docx': Buffer.from([0x50, 0x4b, 0x03, 0x04]),
+  // Nothing the server accepts: a Windows program
+  '.exe': Buffer.from([0x4d, 0x5a, 0x90, 0x00]),
+};
+
+// A file of exactly `bytes` length that starts with the signature its name implies
+export function manuscriptBytes(name, bytes = 64) {
+  const signature = SIGNATURES[name.slice(name.lastIndexOf('.')).toLowerCase()] ?? Buffer.alloc(0);
+  const buffer = Buffer.alloc(Math.max(bytes, signature.length), 65);
+  signature.copy(buffer, 0);
+  return buffer;
+}
+
 // Starts the API on a random port for one test file. When the file finishes, the server stops
 // and the throwaway database and uploads are deleted.
 export async function startApi() {
@@ -49,12 +66,14 @@ export async function startApi() {
       return request('POST', '/auth/login', { body: { email, password, ...extra } });
     },
 
-    // Uploads a fake manuscript of the given size for a stage
-    upload(token, thesisId, stage, { bytes = 64, name = `${stage}.pdf` } = {}) {
+    // Uploads a fake manuscript of the given size for a stage. It carries the real signature for
+    // its extension, since the server checks contents. Pass `contents` to send other bytes.
+    upload(token, thesisId, stage, { bytes = 64, name = `${stage}.pdf`, contents } = {}) {
       const form = new FormData();
       form.append('stage', stage);
       form.append('notes', `Notes for ${stage}`);
-      form.append('file', new Blob([Buffer.alloc(bytes, 65)], { type: 'application/pdf' }), name);
+      const body = contents ?? manuscriptBytes(name, bytes);
+      form.append('file', new Blob([body], { type: 'application/pdf' }), name);
       return request('POST', `/theses/${thesisId}/submissions`, { token, form });
     },
 
