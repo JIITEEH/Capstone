@@ -1,22 +1,22 @@
 import { lazy } from 'react';
 import { Route, Routes } from 'react-router';
-import { GuestOnly, RequireAuth, RequireRole } from './components/auth/Guards.jsx';
-import AppLayout from './components/layout/AppLayout.jsx';
-import Dashboard from './pages/Dashboard.jsx';
-import NotFound from './pages/NotFound.jsx';
-import Login from './pages/auth/Login.jsx';
-import Register from './pages/auth/Register.jsx';
-import ForgotPassword from './pages/auth/ForgotPassword.jsx';
-import ResetPassword from './pages/auth/ResetPassword.jsx';
+import { GuestOnly, RequireAuth, RequireRole } from './ui-pieces/auth/Guards.jsx';
+import AppLayout from './ui-pieces/layout/AppLayout.jsx';
+import Dashboard from './screens/Dashboard.jsx';
+import NotFound from './screens/NotFound.jsx';
+import Login from './screens/auth/Login.jsx';
+import Register from './screens/auth/Register.jsx';
+import ForgotPassword from './screens/auth/ForgotPassword.jsx';
+import ResetPassword from './screens/auth/ResetPassword.jsx';
 
 // Pages load on demand, so each role's browser only downloads the screens that role can use
-const MyThesis = lazy(() => import('./pages/student/MyThesis.jsx'));
-const ThesesList = lazy(() => import('./pages/ThesesList.jsx'));
-const Users = lazy(() => import('./pages/admin/Users.jsx'));
-const ThesisDetail = lazy(() => import('./pages/ThesisDetail.jsx'));
-const SubmissionDetail = lazy(() => import('./pages/SubmissionDetail.jsx'));
-const Schedule = lazy(() => import('./pages/Schedule.jsx'));
-const Profile = lazy(() => import('./pages/Profile.jsx'));
+const MyThesis = lazy(() => import('./screens/student/MyThesis.jsx'));
+const ThesesList = lazy(() => import('./screens/ThesesList.jsx'));
+const Users = lazy(() => import('./screens/admin/Users.jsx'));
+const ThesisDetail = lazy(() => import('./screens/ThesisDetail.jsx'));
+const SubmissionDetail = lazy(() => import('./screens/SubmissionDetail.jsx'));
+const Schedule = lazy(() => import('./screens/Schedule.jsx'));
+const Profile = lazy(() => import('./screens/Profile.jsx'));
 
 export default function App() {
   return (

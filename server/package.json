@@ -7,8 +7,9 @@
   "scripts": {
     "dev": "node --watch --env-file-if-exists=.env src/index.js",
     "start": "node --env-file-if-exists=.env src/index.js",
-    "seed": "node --env-file-if-exists=.env src/db/seed.js",
-    "test": "node --test \"test/*.test.js\""
+    "seed": "node --env-file-if-exists=.env src/database/seed.js",
+    "test": "node --test \"test/*.test.js\"",
+    "backup": "node --env-file-if-exists=.env src/database/backup.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

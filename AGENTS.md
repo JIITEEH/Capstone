@@ -32,18 +32,24 @@ A Thesis Management System with three roles: Student, Adviser, and Admin.
 
 - `client/`: React frontend (Vite, react-router, lucide-react icons, plain CSS in `src/styles/index.css`)
 - `server/`: Express API with SQLite (Node's built-in `node:sqlite`), JWT auth, and multer uploads
+- Folder names say what they hold: `api-endpoints/`, `request-handlers/`, `database-queries/`, `database/`, `permission-rules/`, `request-filters/`, `helpers/`. On the client: `screens/`, `ui-pieces/`, `shared-state/`, `api-client/`, `reusable-logic/`, `helpers/`.
+- `TROUBLESHOOTING.md` maps symptoms to the files to check; update it when a chain changes.
 - Requires Node.js 22.13 or newer. Run `npm install`, `npm run db:seed`, then `npm run dev`.
 - See `README.md` for the full structure, permissions, and scripts.
 
 ## Permission rules for code changes
 
 - Enforce every permission on the server. Client-side route guards are only for UX.
-- Thesis and submission access goes through `server/src/services/access.js`. Users without access get a 404, not a 403.
+- Thesis and submission access goes through `server/src/permission-rules/access.js`. Users without access get a 404, not a 403.
 - Thesis status is derived from submissions by `Thesis.recomputeStatus()`. Call it after any change to submissions or reviews.
 - Keep features role-specific. Reviews and comments belong to the student and adviser. Thesis content belongs to the student. Admins manage users, adviser assignment, status, defenses, and deletion. Update the permissions table in `README.md` when this changes.
-- Schedule access goes through `canViewSchedule` and `canManageSchedule` in `services/access.js`.
+- Schedule access goes through `canViewSchedule` and `canManageSchedule` in `permission-rules/access.js`.
 
 ## Database rules
 
 - The database is relational SQLite. Keep data normalized: a submission's status comes from the `reviews` table through the `submission_details` view, so don't add a status column back to `submissions`.
-- Whenever `server/src/db/schema.sql` changes, bump `SCHEMA_VERSION` in `server/src/db/index.js` and update `server/src/db/seed.js` and the ER diagram in `README.md`.
+- **Never edit an applied migration.** Files in `server/src/database/migrations/` are a history: once a file has run on any database, changing it means databases disagree about their shape. To change the schema, add the next numbered file, for example `005_add_notifications.sql`.
+- A migration must upgrade an existing database in place (`ALTER TABLE`, `CREATE TABLE`, backfill with `UPDATE`). Never write one that drops and recreates a table holding real data.
+- After adding a migration, update `server/src/database/seed.js` and the ER diagram in `README.md` to match.
+- `npm run db:seed` deletes the database and all uploads. It is for demo data only, never for applying a schema change.
+- `npm run db:backup` copies the database and uploads into `server/backups/`. Take a backup before anything that rewrites data, and keep the restore path working: it is tested in `server/test/backup.test.js`.

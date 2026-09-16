@@ -17,19 +17,19 @@ npm run dev                            # run the API and the website together
 
 Open http://localhost:5173. The API runs at http://localhost:3001/api.
 
-> If you pulled a change to the database schema, the server stops with "The database schema is out of date". Run `npm run db:seed` to rebuild it.
+> If you pulled a change to the database schema, the server applies it on the next start and keeps your data. Watch for a line like `Database upgraded: applied 005_add_notifications.sql`.
 
 ### Demo accounts
 
-The adviser and student accounts use the password **`password123`**. The admin account does not: set `SEED_ADMIN_PASSWORD` in `server/.env` before seeding, or leave it unset and copy the random password that `npm run db:seed` prints. In development, the login page has buttons that fill these accounts in.
+The adviser and student accounts use the password **`password123`**. The admin account does not: set `SEED_ADMIN_PASSWORD` in `server/.env` before seeding, or leave it unset and copy the random password that `npm run db:seed` prints. The admin signs in as `admin@example.edu` unless you set `SEED_ADMIN_EMAIL`. In development, the login page has buttons that fill these accounts in.
 
 | Role    | Email                  | What you'll see                                                        |
 | ------- | ---------------------- | ---------------------------------------------------------------------- |
-| Admin   | `jtcatimbang1019@gmail.com` | System stats, all theses and events, user management                   |
+| Admin   | `admin@example.edu`    | System stats, all theses and events, user management                   |
 | Adviser | `maria.santos@tms.edu` | One advisee, one submission to review, upcoming consultation and defense |
 | Student | `ana.cruz@tms.edu`     | Two stages approved, Chapters 4–5 under review, final defense scheduled |
 
-Run `npm run db:seed` any time to reset the database and uploaded files.
+Run `npm run db:seed` any time to reset the database and uploaded files back to the demo data. It deletes everything else, so use it in development only.
 
 ## Roles and permissions
 
@@ -52,6 +52,7 @@ Every rule below is enforced by the API. The UI also hides what a role can't use
 | Edit, complete, or cancel events          | —                          | Own advisees' consultations      | ✅                           |
 | Delete events                             | —                          | —                                | ✅                           |
 | Assign advisers, override status, delete theses | —                    | —                                | ✅                           |
+| Search theses, people, and submissions    | Own group, adviser, and work | Advisees and their work        | All                          |
 | Manage users                              | —                          | —                                | ✅                           |
 
 Users who try to open something outside their role get a 403 (wrong role) or 404 (a record they aren't allowed to see).
@@ -72,7 +73,7 @@ Along the way, advisers schedule **consultations** and admins schedule the **pro
 
 ## Database
 
-The app uses a relational SQLite database. The schema lives in [`server/src/db/schema.sql`](server/src/db/schema.sql).
+The app uses a relational SQLite database. Its shape is built by the numbered files in [`server/src/database/migrations/`](server/src/database/migrations/), starting from [`004_baseline.sql`](server/src/database/migrations/004_baseline.sql).
 
 ```mermaid
 erDiagram
@@ -162,42 +163,47 @@ erDiagram
 - **`thesis_members`** links students to their thesis group. `student_id` is unique, so a student belongs to at most one thesis, and a partial unique index allows only one leader per group. Deleting a student removes them from their group; if they were the last member, the thesis is deleted too.
 - **`submission_details`** is a view that joins each submission with its review. A submission's status (`pending`, `approved`, `revisions_requested`) comes from its review, so status is never stored twice.
 - **`password_resets`** holds one-time reset links. Only a SHA-256 hash of each token is stored. A link expires after 1 hour and is deleted once used. No email service is set up yet, so outside production the reset link is printed in the server console and shown on the "Forgot password" page.
-- **Schema versioning:** `SCHEMA_VERSION` in `server/src/db/index.js` must be bumped whenever `schema.sql` changes.
+- **Changing the schema:** add the next numbered file to `server/src/database/migrations/` (for example `005_add_notifications.sql`). On the next start the server applies every migration above the database's current `PRAGMA user_version`, each in its own transaction, so a failed migration leaves the database on its last good version. Existing accounts, theses, and uploads are kept.
+- **Never edit a migration that has already run.** It has executed on real databases; correct it with a new file instead.
+- **`npm run db:seed` is for demo data only.** It deletes the database and every upload, and refuses to run when `NODE_ENV=production` unless `SEED_ALLOW_PRODUCTION=yes` is set.
 
 ## Project structure
+
+Folder names say what they hold. When something breaks, [TROUBLESHOOTING.md](TROUBLESHOOTING.md) maps each symptom to the files to check, in order.
 
 ```
 Capstone/
 ├── client/                     # React website (Vite)
 │   └── src/
 │       ├── App.jsx             # routes, role guards, lazy-loaded pages
-│       ├── context/            # AuthContext (session), ToastContext (notifications)
-│       ├── services/api.js     # every API call
-│       ├── hooks/useApi.js     # loading/error state and background refresh
-│       ├── components/
+│       ├── shared-state/       # who is signed in (AuthContext), toast messages
+│       ├── api-client/api.js   # every API call
+│       ├── reusable-logic/     # loading/error state and background refresh
+│       ├── ui-pieces/
 │       │   ├── layout/         # sidebar (per-role navigation) and top bar
 │       │   ├── auth/           # route guards
 │       │   ├── schedule/       # event list and event form
 │       │   ├── thesis/         # thesis form, upload form, admin controls
-│       │   └── ui/             # badges, modals, stat cards, progress ring, banner, skeletons
-│       ├── pages/
+│       │   └── basics/         # badges, modals, stat cards, progress ring, error screen
+│       ├── screens/
 │       │   ├── auth/           # login, register, forgot and reset password
 │       │   ├── student/        # student dashboard, my thesis
 │       │   ├── adviser/        # adviser dashboard
 │       │   ├── admin/          # admin dashboard, user management
 │       │   └── *.jsx           # shared: theses, thesis detail, submission, schedule, profile
+│       ├── helpers/            # date and text formatting, shared labels
 │       └── styles/index.css    # design tokens, layout, animations
 └── server/                     # Express API
     ├── data/                   # SQLite database file (git-ignored)
     ├── uploads/                # uploaded manuscripts (git-ignored)
     └── src/
-        ├── db/                 # connection, schema.sql, seed.js
-        ├── routes/             # URL → controller, with role middleware
-        ├── controllers/        # request handling and validation
-        ├── models/             # SQL queries, one file per table
-        ├── services/access.js  # who can see and change which records
-        ├── middleware/         # auth, uploads, errors
-        └── utils/              # passwords, validation, files
+        ├── database/           # connection, migrations/, seed.js
+        ├── api-endpoints/      # URL → handler, with role checks
+        ├── request-handlers/   # request handling and validation
+        ├── database-queries/   # SQL, one file per table
+        ├── permission-rules/   # who can see and change which records
+        ├── request-filters/    # sign-in check, uploads, rate limits, headers, errors
+        └── helpers/            # passwords, validation, files, file signatures
 ```
 
 ## API overview
@@ -218,6 +224,7 @@ Capstone/
 | GET          | `/api/submissions/:id`, `/api/submissions/:id/file` | Anyone with thesis access   |
 | POST         | `/api/submissions/:id/comments`            | Student (own), assigned adviser      |
 | PATCH        | `/api/submissions/:id/review`              | Assigned adviser                     |
+| GET          | `/api/search?q=`                           | Signed in (scoped by role)           |
 | GET          | `/api/schedules?range=upcoming\|past`      | Signed in (scoped by role)           |
 | POST / PATCH | `/api/schedules`, `/api/schedules/:id`     | Adviser (consultations), Admin       |
 | DELETE       | `/api/schedules/:id`                       | Admin                                |
@@ -230,7 +237,8 @@ Capstone/
 | `npm run dev`     | Starts the API (auto-reload) and the Vite dev server  |
 | `npm run build`   | Builds the website into `client/dist`                 |
 | `npm start`       | Runs the API and serves `client/dist` if it exists    |
-| `npm run db:seed` | Resets the database and uploads, then loads demo data |
+| `npm run db:seed` | Deletes the database and uploads, then loads demo data (development only) |
+| `npm run db:backup` | Copies the database and uploads into `server/backups/`, then removes old ones |
 | `npm run lint`    | Checks the code with ESLint                           |
 | `npm test`        | Runs the API tests (each on a throwaway database) and client tests |
 
@@ -240,5 +248,40 @@ Every push and pull request to `main` or `development` runs lint, tests, and the
 
 - Set `NODE_ENV=production` and a long random `JWT_SECRET` in `server/.env`. The server refuses to start in production without one.
 - Run `npm run build`, then `npm start`. Express serves the website and the API from one port.
-- Every response carries security headers from `server/src/middleware/securityHeaders.js`: a content security policy, `X-Content-Type-Options: nosniff`, frame denial, a referrer policy, and HSTS once `NODE_ENV=production`.
+- Every response carries security headers from `server/src/request-filters/securityHeaders.js`: a content security policy, `X-Content-Type-Options: nosniff`, frame denial, a referrer policy, and HSTS once `NODE_ENV=production`.
+- **Back up every night.** `npm run db:backup` writes a timestamped folder under `server/backups/` holding the database, every uploaded manuscript, and a `manifest.json` recording what was in it. Backups older than 14 days are deleted, except the newest, which is always kept. Change the window with `BACKUP_KEEP_DAYS`, or the location with `BACKUP_DIR`.
+
+  Run it nightly with cron (`crontab -e`):
+
+  ```
+  30 2 * * * cd /path/to/Capstone && /usr/local/bin/npm run db:backup >> server/backups/backup.log 2>&1
+  # one run makes the backup, prunes old ones, and copies the new one off the machine
+  ```
+
+  **To restore**, stop the server, then:
+
+  ```bash
+  npm run db:backup -- --list                                   # see what you have
+  npm run db:backup -- --restore server/backups/2026-09-16T02-30-00
+  npm start                                                     # start again
+  ```
+
+  Restoring sets the current database and uploads aside first (`app.db.replaced-<time>`), so restoring the wrong backup can itself be undone.
+
+- **Copy backups off the machine.** A backup on the same disk survives a mistake or a corrupted file, but not a lost, stolen, or dead machine. Set `BACKUP_REMOTE` in `server/.env` and each new backup is copied out with [rclone](https://rclone.org), which talks to Google Drive, Backblaze B2, Dropbox, OneDrive, and most other storage.
+
+  ```bash
+  brew install rclone     # once
+  rclone config           # once: choose your storage and sign in
+  ```
+
+  Then in `server/.env`:
+
+  ```
+  BACKUP_REMOTE=gdrive:thesistrack-backups
+  ```
+
+  where `gdrive` is the name you gave the remote during `rclone config`. Check it works with `rclone lsd gdrive:`. If rclone is missing or misconfigured the local backup still succeeds and the run prints a warning, so a broken remote never costs you the backup you did make.
+
+  **Free storage that suits this:** Google Drive gives 15 GB and you likely have an account already; Backblaze B2 gives 10 GB and is built for backups; Mega gives 20 GB. A year of this project's data is measured in megabytes, so any of them is ample.
 - Uploads are accepted by **content, not by file name**. After a file is written, its first bytes must match its extension (`%PDF-` for PDF, the OLE2 signature for DOC, the ZIP signature for DOCX). Anything else is deleted right away and the student gets a message explaining what to re-export. The server also renames every upload, so a file name can never become a path or a script.

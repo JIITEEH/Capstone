@@ -429,11 +429,16 @@ textarea {
   flex: 1;
 }
 
+.topbar-search-wrap {
+  position: relative;
+  flex: 0 1 460px;
+  min-width: 0;
+}
+
 .topbar-search {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex: 0 1 460px;
   min-width: 0;
   height: 56px;
   padding: 0 10px 0 20px;
@@ -464,6 +469,93 @@ textarea {
 
 .topbar-search input::-webkit-search-cancel-button {
   -webkit-appearance: none;
+}
+
+/* Grouped results under the top-bar search */
+.search-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 0;
+  z-index: 60;
+  width: max(100%, min(520px, calc(100vw - 32px)));
+  max-height: min(560px, calc(100vh - 140px));
+  overflow-y: auto;
+  padding: 8px;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: pop-in 0.18s ease;
+}
+
+.search-panel[hidden] {
+  display: none;
+}
+
+.search-empty {
+  margin: 0;
+  padding: 14px 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.search-group + .search-group {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.search-group-label {
+  padding: 10px 12px 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.search-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.search-option svg {
+  flex-shrink: 0;
+}
+
+.search-option.active {
+  background: var(--primary-soft);
+  color: var(--primary-text);
+}
+
+.search-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.search-option-title,
+.search-option-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-option-title {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.search-option-detail {
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 .kbd {
@@ -1437,7 +1529,17 @@ select.input {
 /* ==========================================================================
    Tables
    ========================================================================== */
+/* A shadow on the right edge while there is more table to scroll to, so a phone user
+   can tell the row continues past the screen instead of assuming it is cut off. */
 .table-wrap {
+  background:
+    linear-gradient(to right, var(--surface) 30%, transparent),
+    linear-gradient(to left, var(--surface) 30%, transparent) 100% 0,
+    radial-gradient(farthest-side at 0 50%, rgba(15, 22, 41, 0.14), transparent),
+    radial-gradient(farthest-side at 100% 50%, rgba(15, 22, 41, 0.14), transparent) 100% 0;
+  background-repeat: no-repeat;
+  background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+  background-attachment: local, local, scroll, scroll;
   overflow-x: auto;
 }
 
@@ -1938,6 +2040,58 @@ a.bar-row:hover .bar-label {
   border-top: 1px solid var(--border);
 }
 
+/* Manuscript shown in the page, so a review needs no download */
+.preview {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.preview-frame {
+  display: block;
+  width: 100%;
+  height: min(70vh, 620px);
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+}
+
+.preview-state {
+  display: grid;
+  place-items: center;
+  min-height: 92px;
+  margin-top: 8px;
+  padding: 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .preview-frame {
+    height: 60vh;
+  }
+}
+
+/* The feedback that prompted this resubmission */
+.previous-version {
+  border-left: 3px solid var(--warning);
+}
+
+.previous-version .card-header h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.previous-version-meta {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
 .notes .prose {
   margin-top: 6px;
 }
@@ -2279,217 +2433,6 @@ a.bar-row:hover .bar-label {
   inset: 0;
   background: var(--contours);
   pointer-events: none;
-}
-
-.auth-visual > * {
-  position: relative;
-  z-index: 1;
-}
-
-.auth-visual > .auth-orb {
-  position: absolute;
-  z-index: 0;
-  border-radius: 50%;
-  opacity: 0.45;
-  filter: blur(60px);
-  animation: drift 14s ease-in-out infinite;
-}
-
-.auth-orb-1 {
-  top: 10%;
-  left: -80px;
-  width: 320px;
-  height: 320px;
-  background: #5b82f0;
-}
-
-.auth-orb-2 {
-  right: -60px;
-  bottom: 8%;
-  width: 280px;
-  height: 280px;
-  background: #7b9cf5;
-  animation-delay: -7s;
-}
-
-.auth-dot {
-  position: absolute;
-  top: 16px;
-  right: 18px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--primary);
-}
-
-.auth-dot-light {
-  background: #8fb0ff;
-}
-
-.auth-event {
-  position: relative;
-  align-self: flex-start;
-  width: 290px;
-  max-width: 100%;
-  margin-bottom: 44px;
-  animation: float 6s ease-in-out infinite;
-}
-
-.auth-event-card,
-.auth-meeting {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 16px 40px 16px 20px;
-  border-radius: 18px;
-  background: #fff;
-  color: var(--text);
-  box-shadow: 0 18px 40px -16px rgba(5, 15, 50, 0.55);
-}
-
-.auth-event-card {
-  z-index: 1;
-  background: var(--primary-soft);
-}
-
-.auth-event-card strong,
-.auth-meeting strong {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.auth-event-card span,
-.auth-meeting > span {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.auth-event-ghost {
-  position: absolute;
-  top: 44px;
-  right: -44px;
-  left: 44px;
-  padding: 58px 20px 14px;
-  border-radius: 18px;
-  background: rgba(10, 22, 72, 0.72);
-  color: #c6d4fa;
-  font-size: 13px;
-  backdrop-filter: blur(6px);
-}
-
-.auth-event-ghost .auth-dot {
-  top: 58px;
-}
-
-.auth-visual-row {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 24px;
-}
-
-.auth-meeting {
-  width: 300px;
-  max-width: 100%;
-  animation: float 7s ease-in-out infinite;
-  animation-delay: -3s;
-}
-
-.auth-stack {
-  display: flex;
-  margin-top: 14px;
-}
-
-.auth-stack span {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  margin-left: -8px;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #7b9cf5, #2451d6);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.auth-stack span:first-child {
-  margin-left: 0;
-}
-
-.auth-stack span:nth-child(2) {
-  background: linear-gradient(135deg, #1a3a9c, #0f2a7a);
-}
-
-.auth-stack span:nth-child(3) {
-  background: linear-gradient(135deg, #a8bff9, #5b82f0);
-}
-
-.auth-people {
-  position: relative;
-  flex-shrink: 0;
-  width: 190px;
-  height: 180px;
-}
-
-.auth-person {
-  position: absolute;
-  display: grid;
-  place-items: center;
-  border: 3px solid rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  color: #fff;
-  font-weight: 600;
-  box-shadow: 0 14px 30px -12px rgba(5, 15, 50, 0.6);
-  animation: float 6s ease-in-out infinite;
-}
-
-.auth-person-1 {
-  top: 0;
-  left: 0;
-  width: 96px;
-  height: 96px;
-  background: linear-gradient(135deg, #8fb0ff, #3a66e6);
-  font-size: 22px;
-}
-
-.auth-person-2 {
-  top: 50px;
-  right: 0;
-  width: 86px;
-  height: 86px;
-  background: linear-gradient(135deg, #1a3a9c, #0a1648);
-  font-size: 20px;
-  animation-delay: -2s;
-}
-
-.auth-person-3 {
-  bottom: 0;
-  left: 52px;
-  width: 70px;
-  height: 70px;
-  background: linear-gradient(135deg, #c6d4fa, #7b9cf5);
-  color: var(--primary-dark);
-  font-size: 17px;
-  animation-delay: -4s;
-}
-
-.auth-visual-copy h1 {
-  max-width: 480px;
-  margin: 0;
-  color: #fff;
-  font-size: 34px;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-}
-
-.auth-visual-copy p {
-  max-width: 420px;
-  margin-top: 10px;
-  color: #c6d4fa;
 }
 
 .auth-panel {
@@ -2899,7 +2842,7 @@ a.bar-row:hover .bar-label {
     padding: 8px 10px;
   }
 
-  .topbar-search {
+  .topbar-search-wrap {
     display: none;
   }
 
@@ -4525,5 +4468,192 @@ a.people-row:hover {
     animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==========================================================================
+   Tables as cards on a phone
+   --------------------------------------------------------------------------
+   A table with six columns cannot fit a 360px screen, and scrolling it
+   sideways hides the columns that matter. Below 640px each row becomes a
+   card, with the column name from the td's data-label beside its value.
+   Columns hidden on a narrow table come back, since a card has the room.
+   ========================================================================== */
+@media (max-width: 640px) {
+  /* Nothing scrolls once rows are stacked, so the scroll shadow would just
+     paint stray edges over the cards */
+  .table-wrap {
+    background: none;
+    overflow-x: visible;
+  }
+
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+    width: auto;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tbody tr {
+    margin: 12px;
+    padding: 4px 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  .table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .table td {
+    display: grid;
+    grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr);
+    gap: 4px 14px;
+    align-items: baseline;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* The column name, taken from the markup so it never drifts from the header */
+  .table td::before {
+    content: attr(data-label);
+    grid-column: 1;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* Every real child belongs in the value column. Without this, a cell holding
+     two things (a title and its keywords, a name and its program) drops the
+     second one into the label column. */
+  .table td > * {
+    grid-column: 2;
+    min-width: 0;
+    /* break-word, not anywhere: a long email wraps only when it has to,
+       instead of splitting mid-word while the line still has room */
+    overflow-wrap: break-word;
+  }
+
+  /* A card has room for the columns a narrow table has to drop */
+  .table .hide-tablet {
+    display: grid;
+  }
+
+  /* These keep the desktop table readable but would force a phone to scroll */
+  .cell-title,
+  .cell-user {
+    min-width: 0;
+    max-width: none;
+  }
+
+  .table td.cell-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .table td.cell-actions::before {
+    display: none;
+  }
+
+  .row-actions {
+    justify-content: flex-start;
+  }
+}
+
+/* ==========================================================================
+   Touch input
+   --------------------------------------------------------------------------
+   Last in the file on purpose: these override sizes set earlier, and same-
+   specificity rules are decided by source order.
+
+   Matched by input device rather than screen width, because an iPad in
+   landscape is 1194px wide and still driven by a finger. A fingertip covers
+   roughly 9mm, so controls get at least 44px and the smallest text moves to
+   12px. A mouse keeps the compact desktop sizes.
+   ========================================================================== */
+@media (pointer: coarse) {
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* The top bar is a flex row; without this the menu button is squeezed narrow */
+  .icon-btn.topbar-menu {
+    flex-shrink: 0;
+    min-width: 44px;
+  }
+
+  .pill-btn {
+    height: 44px;
+    padding: 0 18px;
+  }
+
+  .btn-sm {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+
+  .segmented button {
+    min-height: 44px;
+    padding: 10px 18px;
+  }
+
+  .search-input {
+    min-height: 44px;
+  }
+
+  .search-input input,
+  .toolbar .input {
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .password-toggle {
+    width: 44px;
+    height: 44px;
+    right: 7px;
+  }
+
+  .auth-card .password-input .input {
+    padding-right: 60px;
+  }
+
+  .checkbox input {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Links sitting in a line of text: "View all", "Join meeting", "My advisees".
+     Padding gives the finger room without moving the text itself. */
+  .card-link,
+  .back-link,
+  .event-meta-item a,
+  .event-thesis a,
+  .demo-accounts > summary,
+  .auth-switch a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* Nothing readable below 12px on a handheld screen */
+  .event-date span,
+  .person-label,
+  .kpi-chip,
+  .status-pill,
+  .next-event .next-event-label,
+  .week-pill,
+  .notif-badge,
+  .ring-label,
+  .badge,
+  .chip,
+  .small,
+  .nav-label {
+    font-size: max(12px, 1em);
   }
 }
