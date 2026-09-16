@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { Pencil, Search, Trash2, UserPlus, Users as UsersIcon } from 'lucide-react';
 import Avatar from '../../ui-pieces/basics/Avatar.jsx';
 import { Badge, RoleBadge } from '../../ui-pieces/basics/Badge.jsx';
@@ -124,12 +125,18 @@ export default function Users() {
   const { user: currentUser } = useAuth();
   const toast = useToast();
   const [role, setRole] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
+  // Search results for a person arrive as ?q=
+  const [params] = useSearchParams();
+  const query = params.get('q') ?? '';
+  const [searchInput, setSearchInput] = useState(query);
+  const [search, setSearch] = useState(query.trim());
   const [editing, setEditing] = useState(null); // null, 'new', or a user object
   const [deleting, setDeleting] = useState(null);
   const [deleteState, setDeleteState] = useState({ busy: false, error: '' });
 
+  useEffect(() => {
+    setSearchInput(query);
+  }, [query]);
   useEffect(() => {
     const timer = setTimeout(() => setSearch(searchInput.trim()), 300);
     return () => clearTimeout(timer);

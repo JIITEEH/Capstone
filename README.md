@@ -52,6 +52,7 @@ Every rule below is enforced by the API. The UI also hides what a role can't use
 | Edit, complete, or cancel events          | —                          | Own advisees' consultations      | ✅                           |
 | Delete events                             | —                          | —                                | ✅                           |
 | Assign advisers, override status, delete theses | —                    | —                                | ✅                           |
+| Search theses, people, and submissions    | Own group, adviser, and work | Advisees and their work        | All                          |
 | Manage users                              | —                          | —                                | ✅                           |
 
 Users who try to open something outside their role get a 403 (wrong role) or 404 (a record they aren't allowed to see).
@@ -223,6 +224,7 @@ Capstone/
 | GET          | `/api/submissions/:id`, `/api/submissions/:id/file` | Anyone with thesis access   |
 | POST         | `/api/submissions/:id/comments`            | Student (own), assigned adviser      |
 | PATCH        | `/api/submissions/:id/review`              | Assigned adviser                     |
+| GET          | `/api/search?q=`                           | Signed in (scoped by role)           |
 | GET          | `/api/schedules?range=upcoming\|past`      | Signed in (scoped by role)           |
 | POST / PATCH | `/api/schedules`, `/api/schedules/:id`     | Adviser (consultations), Admin       |
 | DELETE       | `/api/schedules/:id`                       | Admin                                |

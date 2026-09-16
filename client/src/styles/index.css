@@ -429,11 +429,16 @@ textarea {
   flex: 1;
 }
 
+.topbar-search-wrap {
+  position: relative;
+  flex: 0 1 460px;
+  min-width: 0;
+}
+
 .topbar-search {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex: 0 1 460px;
   min-width: 0;
   height: 56px;
   padding: 0 10px 0 20px;
@@ -464,6 +469,93 @@ textarea {
 
 .topbar-search input::-webkit-search-cancel-button {
   -webkit-appearance: none;
+}
+
+/* Grouped results under the top-bar search */
+.search-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 0;
+  z-index: 60;
+  width: max(100%, min(520px, calc(100vw - 32px)));
+  max-height: min(560px, calc(100vh - 140px));
+  overflow-y: auto;
+  padding: 8px;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: pop-in 0.18s ease;
+}
+
+.search-panel[hidden] {
+  display: none;
+}
+
+.search-empty {
+  margin: 0;
+  padding: 14px 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.search-group + .search-group {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.search-group-label {
+  padding: 10px 12px 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.search-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.search-option svg {
+  flex-shrink: 0;
+}
+
+.search-option.active {
+  background: var(--primary-soft);
+  color: var(--primary-text);
+}
+
+.search-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.search-option-title,
+.search-option-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-option-title {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.search-option-detail {
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 .kbd {
@@ -2750,7 +2842,7 @@ a.bar-row:hover .bar-label {
     padding: 8px 10px;
   }
 
-  .topbar-search {
+  .topbar-search-wrap {
     display: none;
   }
 

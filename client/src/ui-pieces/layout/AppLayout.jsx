@@ -1,54 +1,13 @@
-import { Suspense, useEffect, useRef, useState } from 'react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router';
-import { CalendarDays, Menu, Search } from 'lucide-react';
+import { Suspense, useEffect, useState } from 'react';
+import { Link, Outlet, useLocation } from 'react-router';
+import { CalendarDays, Menu } from 'lucide-react';
 import { useAuth } from '../../shared-state/AuthContext.jsx';
 import Avatar from '../basics/Avatar.jsx';
 import ErrorBoundary from '../basics/ErrorBoundary.jsx';
 import { SkeletonPage } from '../basics/Feedback.jsx';
 import Notifications from './Notifications.jsx';
 import Sidebar from './Sidebar.jsx';
-
-const IS_MAC = /Mac|iPhone|iPad/.test(navigator.userAgent);
-
-// Searches the theses list; Cmd/Ctrl+K focuses it from anywhere
-function TopbarSearch() {
-  const navigate = useNavigate();
-  const inputRef = useRef(null);
-  const [query, setQuery] = useState('');
-
-  useEffect(() => {
-    const onKeyDown = (event) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault();
-        inputRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
-
-  function submit(event) {
-    event.preventDefault();
-    const trimmed = query.trim();
-    navigate(trimmed ? `/theses?q=${encodeURIComponent(trimmed)}` : '/theses');
-    inputRef.current?.blur();
-  }
-
-  return (
-    <form className="topbar-search" role="search" onSubmit={submit}>
-      <Search size={22} aria-hidden="true" />
-      <input
-        ref={inputRef}
-        type="search"
-        placeholder="Search theses"
-        aria-label="Search theses"
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-      />
-      <kbd className="kbd">{IS_MAC ? '⌘ K' : 'Ctrl K'}</kbd>
-    </form>
-  );
-}
+import TopbarSearch from './TopbarSearch.jsx';
 
 export default function AppLayout() {
   const { user } = useAuth();
@@ -69,7 +28,7 @@ export default function AppLayout() {
           <button type="button" className="icon-btn topbar-menu" onClick={() => setNavOpen(true)} aria-label="Open menu">
             <Menu size={22} />
           </button>
-          {user.role !== 'student' && <TopbarSearch />}
+          <TopbarSearch />
           <div className="topbar-spacer" />
           <Link to="/schedule" className="round-btn" aria-label="Schedule" title="Schedule">
             <CalendarDays size={21} />

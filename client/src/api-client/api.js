@@ -79,6 +79,8 @@ export const api = {
   updateMe: (data) => request('/auth/me', { method: 'PATCH', body: data }),
 
   dashboard: () => request('/dashboard'),
+  // Theses, people, and submissions the signed-in user can open, grouped
+  search: (q) => request(`/search${toQuery({ q })}`),
 
   // Theses
   listTheses: (params) => request(`/theses${toQuery(params)}`),
