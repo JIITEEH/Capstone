@@ -240,3 +240,5 @@ Every push and pull request to `main` or `development` runs lint, tests, and the
 
 - Set `NODE_ENV=production` and a long random `JWT_SECRET` in `server/.env`. The server refuses to start in production without one.
 - Run `npm run build`, then `npm start`. Express serves the website and the API from one port.
+- Every response carries security headers from `server/src/middleware/securityHeaders.js`: a content security policy, `X-Content-Type-Options: nosniff`, frame denial, a referrer policy, and HSTS once `NODE_ENV=production`.
+- Uploads are accepted by **content, not by file name**. After a file is written, its first bytes must match its extension (`%PDF-` for PDF, the OLE2 signature for DOC, the ZIP signature for DOCX). Anything else is deleted right away and the student gets a message explaining what to re-export. The server also renames every upload, so a file name can never become a path or a script.

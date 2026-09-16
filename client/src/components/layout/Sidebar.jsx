@@ -23,7 +23,8 @@ const NAV_BY_ROLE = {
 };
 
 const PROMO_BY_ROLE = {
-  student: { lead: 'Book', rest: 'a consultation', text: 'Meet your adviser before the next stage' },
+  // Students can't schedule anything, so this points them at the list instead of a booking form
+  student: { lead: 'See', rest: 'your consultations', text: 'Your adviser sets these before each stage' },
   adviser: { lead: 'Plan', rest: 'your consultations', text: 'Keep every advisee meeting on track' },
   admin: { lead: 'Schedule', rest: 'the next defense', text: 'Set dates and panels in one place' },
 };

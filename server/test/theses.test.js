@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { before, describe, it } from 'node:test';
 import config from '../src/config/index.js';
-import { makeUser, startApi } from './helpers.js';
+import { makeUser, manuscriptBytes, startApi } from './helpers.js';
 
 const MB = 1024 * 1024;
 const api = await startApi();
@@ -98,6 +98,33 @@ describe('uploading submissions', () => {
   it('only accepts PDF, DOC, and DOCX files', async () => {
     const res = await api.upload(student.token, thesisId, 'proposal', { name: 'virus.exe' });
     assert.equal(res.status, 400);
+  });
+
+  it('rejects a program renamed to look like a manuscript', async () => {
+    const res = await api.upload(student.token, thesisId, 'proposal', {
+      name: 'proposal.pdf',
+      contents: manuscriptBytes('disguised.exe', 2048),
+    });
+    assert.equal(res.status, 400);
+    assert.match(res.data.error, /isn't a valid PDF/);
+  });
+
+  it('rejects a real DOCX that was renamed .pdf', async () => {
+    const res = await api.upload(student.token, thesisId, 'proposal', {
+      name: 'proposal.pdf',
+      contents: manuscriptBytes('real.docx', 2048),
+    });
+    assert.equal(res.status, 400);
+    assert.match(res.data.error, /contents are a DOCX/);
+  });
+
+  it('rejects an empty file', async () => {
+    const res = await api.upload(student.token, thesisId, 'proposal', { contents: Buffer.alloc(0) });
+    assert.equal(res.status, 400);
+  });
+
+  it('keeps no rejected file on disk', async () => {
+    assert.equal(fs.readdirSync(config.uploadDir).length, 0);
   });
 
   it('rejects files over the upload limit with a clear message', async () => {
