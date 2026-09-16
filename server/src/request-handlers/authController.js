@@ -3,6 +3,7 @@ import config from '../config/index.js';
 import { DEMO_PASSWORD, ROLES } from '../constants.js';
 import * as PasswordReset from '../database-queries/passwordResetModel.js';
 import * as User from '../database-queries/userModel.js';
+import { passwordResetEmail, sendInBackground } from '../helpers/email.js';
 import { verifyPassword } from '../helpers/password.js';
 import { HttpError } from '../helpers/httpError.js';
 import { optionalText, requireEmail, requirePassword, requireText } from '../helpers/validate.js';
@@ -54,12 +55,9 @@ export function forgotPassword(req, res) {
   if (record?.is_active) {
     const token = PasswordReset.create(record.id);
     const resetUrl = `${config.clientOrigin}/reset-password?token=${token}`;
-    // No email service is set up yet. Send resetUrl by email here once there is one.
-    // Outside production the link is logged and returned so the flow can be tested.
-    if (config.env !== 'production') {
-      console.log(`Password reset link for ${email}: ${resetUrl}`);
-      response.devResetUrl = resetUrl;
-    }
+    sendInBackground(passwordResetEmail({ to: record.email, name: record.name, resetUrl }));
+    // Outside production the link is also returned, so the flow can be tried without a mail server
+    if (config.env !== 'production') response.devResetUrl = resetUrl;
   }
 
   res.json(response);

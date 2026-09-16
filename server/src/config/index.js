@@ -35,6 +35,17 @@ const config = {
   // "Keep me signed in" gets the longer session
   jwtExpiresIn: '12h',
   jwtRememberExpiresIn: '30d',
+  // Outgoing email. With no SMTP_HOST, emails are printed to the console outside production and
+  // not sent at all in production. Gmail works for free with an app password; see DEPLOYMENT.md.
+  mail: {
+    host: process.env.SMTP_HOST || '',
+    port: Number(process.env.SMTP_PORT) || 465,
+    // Port 465 uses TLS from the start; 587 upgrades to it after connecting
+    secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE !== 'false' : (Number(process.env.SMTP_PORT) || 465) === 465,
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.MAIL_FROM || (process.env.SMTP_USER ? `ThesisTrack <${process.env.SMTP_USER}>` : 'ThesisTrack <no-reply@localhost>'),
+  },
   // Leaves room for image-heavy final manuscripts and scanned pages
   maxUploadBytes: 50 * 1024 * 1024,
 };
