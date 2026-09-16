@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url';
 import express from 'express';
 import cors from 'cors';
 import config from './config/index.js';
-import routes from './routes/index.js';
-import { notFound, errorHandler } from './middleware/errorHandler.js';
-import { securityHeaders } from './middleware/securityHeaders.js';
+import routes from './api-endpoints/index.js';
+import { notFound, errorHandler } from './request-filters/errorHandler.js';
+import { securityHeaders } from './request-filters/securityHeaders.js';
 
 const app = express();
 

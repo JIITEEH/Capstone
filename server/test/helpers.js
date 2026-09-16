@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { after } from 'node:test';
 import { tempDir } from './setup.js';
 import app from '../src/app.js';
-import * as User from '../src/models/userModel.js';
+import * as User from '../src/database-queries/userModel.js';
 
 export const PASSWORD = 'password123';
 

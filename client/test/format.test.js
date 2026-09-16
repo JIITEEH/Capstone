@@ -8,7 +8,7 @@ import {
   parseDate,
   plural,
   toLocalInputValue,
-} from '../src/utils/format.js';
+} from '../src/helpers/format.js';
 
 describe('parseDate', () => {
   it('reads SQLite timestamps as UTC', () => {

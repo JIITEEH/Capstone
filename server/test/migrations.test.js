@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, describe, it } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
-import { currentVersion, listMigrations, migrate, MIGRATIONS_DIR } from '../src/db/migrate.js';
+import { currentVersion, listMigrations, migrate, MIGRATIONS_DIR } from '../src/database/migrate.js';
 
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'thesistrack-migrations-'));
 after(() => fs.rmSync(scratch, { recursive: true, force: true }));

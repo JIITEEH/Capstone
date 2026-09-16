@@ -72,7 +72,7 @@ Along the way, advisers schedule **consultations** and admins schedule the **pro
 
 ## Database
 
-The app uses a relational SQLite database. Its shape is built by the numbered files in [`server/src/db/migrations/`](server/src/db/migrations/), starting from [`004_baseline.sql`](server/src/db/migrations/004_baseline.sql).
+The app uses a relational SQLite database. Its shape is built by the numbered files in [`server/src/database/migrations/`](server/src/database/migrations/), starting from [`004_baseline.sql`](server/src/database/migrations/004_baseline.sql).
 
 ```mermaid
 erDiagram
@@ -162,44 +162,47 @@ erDiagram
 - **`thesis_members`** links students to their thesis group. `student_id` is unique, so a student belongs to at most one thesis, and a partial unique index allows only one leader per group. Deleting a student removes them from their group; if they were the last member, the thesis is deleted too.
 - **`submission_details`** is a view that joins each submission with its review. A submission's status (`pending`, `approved`, `revisions_requested`) comes from its review, so status is never stored twice.
 - **`password_resets`** holds one-time reset links. Only a SHA-256 hash of each token is stored. A link expires after 1 hour and is deleted once used. No email service is set up yet, so outside production the reset link is printed in the server console and shown on the "Forgot password" page.
-- **Changing the schema:** add the next numbered file to `server/src/db/migrations/` (for example `005_add_notifications.sql`). On the next start the server applies every migration above the database's current `PRAGMA user_version`, each in its own transaction, so a failed migration leaves the database on its last good version. Existing accounts, theses, and uploads are kept.
+- **Changing the schema:** add the next numbered file to `server/src/database/migrations/` (for example `005_add_notifications.sql`). On the next start the server applies every migration above the database's current `PRAGMA user_version`, each in its own transaction, so a failed migration leaves the database on its last good version. Existing accounts, theses, and uploads are kept.
 - **Never edit a migration that has already run.** It has executed on real databases; correct it with a new file instead.
 - **`npm run db:seed` is for demo data only.** It deletes the database and every upload, and refuses to run when `NODE_ENV=production` unless `SEED_ALLOW_PRODUCTION=yes` is set.
 
 ## Project structure
+
+Folder names say what they hold. When something breaks, [TROUBLESHOOTING.md](TROUBLESHOOTING.md) maps each symptom to the files to check, in order.
 
 ```
 Capstone/
 ├── client/                     # React website (Vite)
 │   └── src/
 │       ├── App.jsx             # routes, role guards, lazy-loaded pages
-│       ├── context/            # AuthContext (session), ToastContext (notifications)
-│       ├── services/api.js     # every API call
-│       ├── hooks/useApi.js     # loading/error state and background refresh
-│       ├── components/
+│       ├── shared-state/       # who is signed in (AuthContext), toast messages
+│       ├── api-client/api.js   # every API call
+│       ├── reusable-logic/     # loading/error state and background refresh
+│       ├── ui-pieces/
 │       │   ├── layout/         # sidebar (per-role navigation) and top bar
 │       │   ├── auth/           # route guards
 │       │   ├── schedule/       # event list and event form
 │       │   ├── thesis/         # thesis form, upload form, admin controls
-│       │   └── ui/             # badges, modals, stat cards, progress ring, banner, skeletons
-│       ├── pages/
+│       │   └── basics/         # badges, modals, stat cards, progress ring, error screen
+│       ├── screens/
 │       │   ├── auth/           # login, register, forgot and reset password
 │       │   ├── student/        # student dashboard, my thesis
 │       │   ├── adviser/        # adviser dashboard
 │       │   ├── admin/          # admin dashboard, user management
 │       │   └── *.jsx           # shared: theses, thesis detail, submission, schedule, profile
+│       ├── helpers/            # date and text formatting, shared labels
 │       └── styles/index.css    # design tokens, layout, animations
 └── server/                     # Express API
     ├── data/                   # SQLite database file (git-ignored)
     ├── uploads/                # uploaded manuscripts (git-ignored)
     └── src/
-        ├── db/                 # connection, migrations/, seed.js
-        ├── routes/             # URL → controller, with role middleware
-        ├── controllers/        # request handling and validation
-        ├── models/             # SQL queries, one file per table
-        ├── services/access.js  # who can see and change which records
-        ├── middleware/         # auth, uploads, errors
-        └── utils/              # passwords, validation, files
+        ├── database/           # connection, migrations/, seed.js
+        ├── api-endpoints/      # URL → handler, with role checks
+        ├── request-handlers/   # request handling and validation
+        ├── database-queries/   # SQL, one file per table
+        ├── permission-rules/   # who can see and change which records
+        ├── request-filters/    # sign-in check, uploads, rate limits, headers, errors
+        └── helpers/            # passwords, validation, files, file signatures
 ```
 
 ## API overview
@@ -242,5 +245,5 @@ Every push and pull request to `main` or `development` runs lint, tests, and the
 
 - Set `NODE_ENV=production` and a long random `JWT_SECRET` in `server/.env`. The server refuses to start in production without one.
 - Run `npm run build`, then `npm start`. Express serves the website and the API from one port.
-- Every response carries security headers from `server/src/middleware/securityHeaders.js`: a content security policy, `X-Content-Type-Options: nosniff`, frame denial, a referrer policy, and HSTS once `NODE_ENV=production`.
+- Every response carries security headers from `server/src/request-filters/securityHeaders.js`: a content security policy, `X-Content-Type-Options: nosniff`, frame denial, a referrer policy, and HSTS once `NODE_ENV=production`.
 - Uploads are accepted by **content, not by file name**. After a file is written, its first bytes must match its extension (`%PDF-` for PDF, the OLE2 signature for DOC, the ZIP signature for DOCX). Anything else is deleted right away and the student gets a message explaining what to re-export. The server also renames every upload, so a file name can never become a path or a script.
