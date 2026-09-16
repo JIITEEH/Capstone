@@ -21,6 +21,11 @@ const config = {
   port: Number(process.env.PORT) || 3001,
   env,
   trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
+  // Restricts public sign-up to these email domains, e.g. "tms.edu,students.tms.edu". Empty allows any.
+  allowedEmailDomains: (process.env.ALLOWED_EMAIL_DOMAINS || '')
+    .split(',')
+    .map((domain) => domain.trim().toLowerCase().replace(/^@/, ''))
+    .filter(Boolean),
   clientOrigin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
   // Relative paths resolve from the server/ folder, whatever directory you run from
   databasePath: path.resolve(serverRoot, process.env.DATABASE_PATH || './data/app.db'),

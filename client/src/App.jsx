@@ -8,6 +8,7 @@ import Login from './screens/auth/Login.jsx';
 import Register from './screens/auth/Register.jsx';
 import ForgotPassword from './screens/auth/ForgotPassword.jsx';
 import ResetPassword from './screens/auth/ResetPassword.jsx';
+import VerifyEmail from './screens/auth/VerifyEmail.jsx';
 
 // Pages load on demand, so each role's browser only downloads the screens that role can use
 const MyThesis = lazy(() => import('./screens/student/MyThesis.jsx'));
@@ -27,6 +28,8 @@ export default function App() {
       <Route path="/register" element={<GuestOnly><Register /></GuestOnly>} />
       <Route path="/forgot-password" element={<GuestOnly><ForgotPassword /></GuestOnly>} />
       <Route path="/reset-password" element={<GuestOnly><ResetPassword /></GuestOnly>} />
+      {/* Not guest-only: a student often opens the email link while already signed in */}
+      <Route path="/verify-email" element={<VerifyEmail />} />
 
       <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
         <Route index element={<Dashboard />} />

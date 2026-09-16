@@ -38,7 +38,12 @@ export function AuthProvider({ children }) {
       loading,
       login: async (email, password, remember = false) =>
         startSession(await api.login(email, password, remember), remember),
-      register: async (data) => startSession(await api.register(data)),
+      // Returns the whole response, which outside production includes the verification link
+      register: async (data) => {
+        const result = await api.register(data);
+        startSession(result);
+        return result;
+      },
       logout,
       setUser,
     }),

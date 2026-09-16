@@ -53,11 +53,13 @@ const adminPasswordHash = hashPassword(adminPassword);
 // Helpers
 // ---------------------------------------------------------------------------
 
+// Demo accounts are verified from the moment they were created, like any account an admin makes
 const insertUser = db.prepare(
-  "INSERT INTO users (name, email, password_hash, role, program, created_at) VALUES (?, ?, ?, ?, ?, datetime('now', ?))",
+  `INSERT INTO users (name, email, password_hash, role, program, created_at, email_verified_at)
+   VALUES (?, ?, ?, ?, ?, datetime('now', ?), datetime('now', ?))`,
 );
 function user(name, email, role, program, ago, hash = passwordHash) {
-  return Number(insertUser.run(name, email, hash, role, program, ago).lastInsertRowid);
+  return Number(insertUser.run(name, email, hash, role, program, ago, ago).lastInsertRowid);
 }
 
 const insertThesis = db.prepare(

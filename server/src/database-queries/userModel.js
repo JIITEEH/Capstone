@@ -1,7 +1,8 @@
 import db from '../database/index.js';
 import { hashPassword } from '../helpers/password.js';
 
-const PUBLIC_COLUMNS = 'u.id, u.name, u.email, u.role, u.program, u.is_active, u.created_at';
+const PUBLIC_COLUMNS =
+  'u.id, u.name, u.email, u.role, u.program, u.is_active, (u.email_verified_at IS NOT NULL) AS email_verified, u.created_at';
 
 export function findById(id) {
   return db.prepare(`SELECT ${PUBLIC_COLUMNS} FROM users u WHERE u.id = ?`).get(id);
@@ -52,9 +53,14 @@ export function listAdvisers() {
     .all();
 }
 
-export function create({ name, email, password, role, program = '' }) {
+// Accounts start verified unless told otherwise: an admin creating one vouches for the address.
+// Public sign-up passes verified: false and sends a verification link.
+export function create({ name, email, password, role, program = '', verified = true }) {
   const result = db
-    .prepare('INSERT INTO users (name, email, password_hash, role, program) VALUES (?, ?, ?, ?, ?)')
+    .prepare(
+      `INSERT INTO users (name, email, password_hash, role, program, email_verified_at)
+       VALUES (?, ?, ?, ?, ?, ${verified ? "datetime('now')" : 'NULL'})`,
+    )
     .run(name, email, hashPassword(password), role, program);
   return findById(result.lastInsertRowid);
 }

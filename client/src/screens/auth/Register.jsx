@@ -19,8 +19,8 @@ export default function Register() {
     setError('');
     try {
       const { confirm, ...data } = values;
-      await register(data);
-      navigate('/thesis', { replace: true });
+      const result = await register(data);
+      navigate('/thesis', { replace: true, state: { devVerifyUrl: result.devVerifyUrl } });
     } catch (err) {
       setError(err.message);
       setBusy(false);

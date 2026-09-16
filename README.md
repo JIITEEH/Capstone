@@ -95,6 +95,7 @@ erDiagram
     users ||--o{ schedule_panelists : "sits on"
     theses ||--o{ activity : "logs"
     users ||--o{ password_resets : "requests"
+    users ||--o{ email_verifications : "confirms with"
     users ||--o{ notifications : "receives"
     users ||--o{ audit_log : "acts in (admin)"
     schedules ||--o{ defense_evaluations : "scored in"
@@ -109,6 +110,7 @@ erDiagram
         text program
         int is_active
         int token_version "raised on every password change"
+        text email_verified_at "null until the email link is used"
     }
     theses {
         int id PK
@@ -166,6 +168,12 @@ erDiagram
         text token_hash UK
         text expires_at
     }
+    email_verifications {
+        int id PK
+        int user_id FK
+        text token_hash UK
+        text expires_at
+    }
     notifications {
         int id PK
         int user_id FK
@@ -208,6 +216,7 @@ erDiagram
 - **`thesis_members`** links students to their thesis group. `student_id` is unique, so a student belongs to at most one thesis, and a partial unique index allows only one leader per group. Deleting a student removes them from their group; if they were the last member, the thesis is deleted too.
 - **`submission_details`** is a view that joins each submission with its review. A submission's status (`pending`, `approved`, `revisions_requested`) comes from its review, so status is never stored twice.
 - **`password_resets`** holds one-time reset links. Only a SHA-256 hash of each token is stored. A link expires after 1 hour and is deleted once used. The link is emailed over SMTP (see `DEPLOYMENT.md`); outside production it is also shown on the "Forgot password" page so the flow works without a mail server.
+- **`users.email_verified_at`** is empty until a student who signed up opens the link in their verification email. Until then they can sign in, but can't start a thesis or be added to a group, so nobody can register with a classmate's address and join in their place. Accounts created by an admin, and every account that existed before verification, count as verified. `email_verifications` stores the links, hashed, for 48 hours.
 - **`users.token_version`** ends sessions when a password changes. Each sign-in token records it, and every password change raises it, so older tokens are refused.
 - **`notifications`** holds one row per recipient, so each person reads and dismisses their own copy. Nobody is notified about their own action, and each notification is written in the same transaction as the event it describes.
 - **`audit_log`** records admin changes to accounts and theses. Names are copied in at the time, so an entry outlives the user or admin it mentions. The app never edits or deletes an entry.

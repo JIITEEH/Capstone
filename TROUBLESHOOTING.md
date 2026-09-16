@@ -121,6 +121,18 @@ full computer lab is never locked out together. Restarting the server clears the
 4. Look in spam. The request page answers the same way whether or not the email exists or sent, on purpose.
 5. Code: `server/src/helpers/email.js`, called from `request-handlers/authController.js` → `forgotPassword`.
 
+### "A new student can't start a thesis" or "I can't add a classmate to my group"
+
+They haven't verified their email yet. Students who sign up must open the link in their verification
+email first. Accounts made by an admin don't need this.
+
+1. On their thesis page they can choose **Send a new link**. Links expire after 48 hours.
+2. No email arriving? It's the same mail setup as password resets; see the entry above.
+3. Sign-up refused with "Sign up with your school email address"? `ALLOWED_EMAIL_DOMAINS` in `server/.env`
+   limits which domains may register.
+4. Code: `server/src/request-handlers/authController.js` → `register`, `verifyEmail`, `resendVerification`;
+   the checks in `thesisController.js` → `createThesis` and `addMember`.
+
 ### "Everyone was signed out after a password change"
 
 Expected. Changing, resetting, or having an admin set a password ends every session for that account,

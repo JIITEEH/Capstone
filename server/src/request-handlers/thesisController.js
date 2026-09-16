@@ -67,6 +67,9 @@ export function exportTheses(req, res) {
 }
 
 export function createThesis(req, res) {
+  if (!req.user.email_verified) {
+    throw new HttpError(403, 'Verify your email address before starting a thesis. Check your inbox for the link.');
+  }
   if (Thesis.findByStudent(req.user.id)) throw new HttpError(409, 'You already have a thesis');
 
   const fields = readThesisFields(req.body ?? {}, { partial: false });
@@ -212,6 +215,10 @@ export function addMember(req, res) {
   const student = User.findByEmailWithHash(email);
   if (!student || student.role !== 'student' || !student.is_active) {
     throw new HttpError(400, 'No active student account uses that email');
+  }
+  // Stops someone registering with a classmate's address and being added in their place
+  if (!student.email_verified_at) {
+    throw new HttpError(400, `${student.name} needs to verify their email address before joining a group`);
   }
 
   const current = Thesis.findByStudent(student.id);

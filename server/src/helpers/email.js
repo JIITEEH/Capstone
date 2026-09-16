@@ -56,6 +56,30 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
 }
 
+export function verifyEmailEmail({ to, name, verifyUrl, hours }) {
+  const text = [
+    `Hi ${name},`,
+    '',
+    'Welcome to ThesisTrack. Confirm this is your email address by opening:',
+    '',
+    verifyUrl,
+    '',
+    `The link works once and expires in ${hours} hours. Until you confirm, you can sign in but can't start or join a thesis group.`,
+    '',
+    "If you didn't create this account, ignore this email.",
+  ].join('\n');
+
+  const html = `
+    <p>Hi ${escapeHtml(name)},</p>
+    <p>Welcome to ThesisTrack. Confirm this is your email address:</p>
+    <p><a href="${escapeHtml(verifyUrl)}">Verify my email</a></p>
+    <p>The link works once and expires in ${hours} hours. Until you confirm, you can sign in but can't start or join a thesis group.</p>
+    <p style="color:#6a7389">If you didn't create this account, ignore this email.</p>
+  `;
+
+  return { to, subject: 'Verify your ThesisTrack email address', text, html };
+}
+
 export function passwordResetEmail({ to, name, resetUrl }) {
   const text = [
     `Hi ${name},`,

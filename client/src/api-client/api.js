@@ -104,6 +104,8 @@ export const api = {
   resetPassword: (token, password) =>
     request('/auth/reset-password', { method: 'POST', body: { token, password } }),
   me: () => request('/auth/me'),
+  verifyEmail: (token) => request('/auth/verify-email', { method: 'POST', body: { token } }),
+  resendVerification: () => request('/auth/resend-verification', { method: 'POST' }),
   demoAccounts: () => request('/auth/demo-accounts'),
   // Changing the password ends every session, this one included, so the server sends a new token
   // for this device. Saving it here keeps the user signed in without every caller knowing.

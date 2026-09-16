@@ -38,6 +38,7 @@ cp server/.env.example server/.env
 | `PORT` | `3001` | The port nginx forwards to. Keep it private; don't open it in the firewall |
 | `CLIENT_ORIGIN` | `https://thesis.yourschool.edu` | The public address. Used in password reset links |
 | `TRUST_PROXY` | `1` | **Set this behind nginx.** See below |
+| `ALLOWED_EMAIL_DOMAINS` | `yourschool.edu` | Only these addresses may sign up. Empty allows any |
 | `SMTP_HOST` | `smtp.gmail.com` | **Needed for password reset emails.** See section 4 |
 | `SMTP_PORT` | `465` | 465 for TLS from the start, 587 for STARTTLS |
 | `SMTP_USER` | your sending address | The account that sends the email |

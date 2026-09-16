@@ -1,9 +1,10 @@
 import jwt from 'jsonwebtoken';
 import config from '../config/index.js';
 import { DEMO_PASSWORD, ROLES } from '../constants.js';
+import * as EmailVerification from '../database-queries/emailVerificationModel.js';
 import * as PasswordReset from '../database-queries/passwordResetModel.js';
 import * as User from '../database-queries/userModel.js';
-import { passwordResetEmail, sendInBackground } from '../helpers/email.js';
+import { passwordResetEmail, sendInBackground, verifyEmailEmail } from '../helpers/email.js';
 import { verifyPassword } from '../helpers/password.js';
 import { HttpError } from '../helpers/httpError.js';
 import { optionalText, requireEmail, requirePassword, requireText } from '../helpers/validate.js';
@@ -16,7 +17,17 @@ function issueToken(user, { remember = false } = {}) {
   });
 }
 
-// Public sign-up creates student accounts only; admins create adviser and admin accounts
+// Emails a fresh verification link. Outside production the link is also returned, so sign-up can
+// be tried without a mail server.
+function sendVerification(user) {
+  const token = EmailVerification.create(user.id);
+  const verifyUrl = `${config.clientOrigin}/verify-email?token=${token}`;
+  sendInBackground(verifyEmailEmail({ to: user.email, name: user.name, verifyUrl, hours: EmailVerification.LINK_LIFETIME_HOURS }));
+  return config.env !== 'production' ? { devVerifyUrl: verifyUrl } : {};
+}
+
+// Public sign-up creates student accounts only; admins create adviser and admin accounts.
+// The student can sign in straight away, but must verify their email to start or join a thesis.
 export function register(req, res) {
   const body = req.body ?? {};
   const name = requireText(body.name, 'Name', { max: 120 });
@@ -24,10 +35,30 @@ export function register(req, res) {
   const program = optionalText(body.program, 'Program', { max: 120 });
   const password = requirePassword(body.password);
 
+  const domains = config.allowedEmailDomains;
+  if (domains.length && !domains.includes(email.split('@')[1])) {
+    throw new HttpError(400, `Sign up with your school email address (${domains.map((d) => `@${d}`).join(' or ')})`);
+  }
   if (User.emailTaken(email)) throw new HttpError(409, 'An account with this email already exists');
 
-  const user = User.create({ name, email, password, role: 'student', program });
-  res.status(201).json({ token: issueToken(user, { remember: true }), user });
+  const user = User.create({ name, email, password, role: 'student', program, verified: false });
+  res.status(201).json({ token: issueToken(user, { remember: true }), user, ...sendVerification(user) });
+}
+
+export function verifyEmail(req, res) {
+  const token = req.body?.token;
+  if (typeof token !== 'string' || !token || !EmailVerification.consume(token)) {
+    throw new HttpError(400, 'This verification link is invalid or has expired. Sign in to send a new one.');
+  }
+  res.json({ message: 'Your email address is verified.' });
+}
+
+export function resendVerification(req, res) {
+  if (req.user.email_verified) throw new HttpError(400, 'Your email address is already verified');
+  res.json({
+    message: `We sent a new verification link to ${req.user.email}.`,
+    ...sendVerification(req.user),
+  });
 }
 
 export function login(req, res) {
