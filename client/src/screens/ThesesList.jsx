@@ -113,28 +113,28 @@ export default function ThesesList() {
               <tbody>
                 {theses.map((thesis) => (
                   <tr key={thesis.id} className="row-clickable" onClick={() => navigate(`/theses/${thesis.id}`)}>
-                    <td className="cell-title">
+                    <td className="cell-title" data-label="Thesis">
                       <Link to={`/theses/${thesis.id}`} onClick={(e) => e.stopPropagation()}>
                         {thesis.title}
                       </Link>
                       {thesis.keywords && <span className="cell-sub clamp-1">{thesis.keywords}</span>}
                     </td>
-                    <td>
+                    <td data-label="Students">
                       <span className="nowrap">{thesis.student_name}</span>
                       <span className="cell-sub">{thesis.student_program}</span>
                     </td>
                     {isAdmin && (
-                      <td className="hide-tablet">
+                      <td className="hide-tablet" data-label="Adviser">
                         {thesis.adviser_name ?? <span className="text-danger">Not assigned</span>}
                       </td>
                     )}
-                    <td>
+                    <td data-label="Progress">
                       <ProgressBar value={thesis.approved_stages} max={STAGES.length} />
                     </td>
-                    <td>
+                    <td data-label="Status">
                       <ThesisStatusBadge status={thesis.status} />
                     </td>
-                    <td className="hide-tablet nowrap muted">{formatDate(thesis.updated_at)}</td>
+                    <td className="hide-tablet nowrap muted" data-label="Updated">{formatDate(thesis.updated_at)}</td>
                   </tr>
                 ))}
               </tbody>

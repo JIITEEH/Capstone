@@ -4380,6 +4380,100 @@ a.people-row:hover {
 }
 
 /* ==========================================================================
+   Tables as cards on a phone
+   --------------------------------------------------------------------------
+   A table with six columns cannot fit a 360px screen, and scrolling it
+   sideways hides the columns that matter. Below 640px each row becomes a
+   card, with the column name from the td's data-label beside its value.
+   Columns hidden on a narrow table come back, since a card has the room.
+   ========================================================================== */
+@media (max-width: 640px) {
+  /* Nothing scrolls once rows are stacked, so the scroll shadow would just
+     paint stray edges over the cards */
+  .table-wrap {
+    background: none;
+    overflow-x: visible;
+  }
+
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+    width: auto;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tbody tr {
+    margin: 12px;
+    padding: 4px 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  .table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .table td {
+    display: grid;
+    grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr);
+    gap: 4px 14px;
+    align-items: baseline;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* The column name, taken from the markup so it never drifts from the header */
+  .table td::before {
+    content: attr(data-label);
+    grid-column: 1;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* Every real child belongs in the value column. Without this, a cell holding
+     two things (a title and its keywords, a name and its program) drops the
+     second one into the label column. */
+  .table td > * {
+    grid-column: 2;
+    min-width: 0;
+    /* break-word, not anywhere: a long email wraps only when it has to,
+       instead of splitting mid-word while the line still has room */
+    overflow-wrap: break-word;
+  }
+
+  /* A card has room for the columns a narrow table has to drop */
+  .table .hide-tablet {
+    display: grid;
+  }
+
+  /* These keep the desktop table readable but would force a phone to scroll */
+  .cell-title,
+  .cell-user {
+    min-width: 0;
+    max-width: none;
+  }
+
+  .table td.cell-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .table td.cell-actions::before {
+    display: none;
+  }
+
+  .row-actions {
+    justify-content: flex-start;
+  }
+}
+
+/* ==========================================================================
    Touch input
    --------------------------------------------------------------------------
    Last in the file on purpose: these override sizes set earlier, and same-

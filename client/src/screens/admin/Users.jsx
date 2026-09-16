@@ -216,7 +216,7 @@ export default function Users() {
               <tbody>
                 {users.map((u) => (
                   <tr key={u.id}>
-                    <td>
+                    <td data-label="User">
                       <div className="cell-user">
                         <Avatar name={u.name} size="sm" />
                         <div>
@@ -228,14 +228,18 @@ export default function Users() {
                         </div>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Role">
                       <RoleBadge role={u.role} />
                       {u.role === 'adviser' && <span className="cell-sub">{plural(u.advisee_count, 'advisee')}</span>}
                     </td>
-                    <td className="hide-tablet">{u.program || <span className="muted">—</span>}</td>
-                    <td>{u.is_active ? <Badge tone="success">Active</Badge> : <Badge tone="danger">Inactive</Badge>}</td>
-                    <td className="hide-tablet nowrap muted">{formatDate(u.created_at)}</td>
-                    <td>
+                    <td className="hide-tablet" data-label="Program / Department">
+                      {u.program || <span className="muted">—</span>}
+                    </td>
+                    <td data-label="Status">
+                      {u.is_active ? <Badge tone="success">Active</Badge> : <Badge tone="danger">Inactive</Badge>}
+                    </td>
+                    <td className="hide-tablet nowrap muted" data-label="Joined">{formatDate(u.created_at)}</td>
+                    <td className="cell-actions">
                       <div className="row-actions">
                         <button type="button" className="icon-btn" onClick={() => setEditing(u)} aria-label={`Edit ${u.name}`}>
                           <Pencil size={16} />
