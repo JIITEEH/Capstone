@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import {
   Check,
@@ -7,6 +7,7 @@ import {
   Clock,
   Download,
   FileText,
+  History,
   Lock,
   MessageSquare,
   RotateCcw,
@@ -22,6 +23,88 @@ import useApi from '../reusable-logic/useApi.js';
 import { api } from '../api-client/api.js';
 import { STAGE_LABELS } from '../helpers/constants.js';
 import { formatBytes, formatDateTime, plural, timeAgo } from '../helpers/format.js';
+
+// Shows the manuscript in the page so an adviser doesn't have to download it first. The file needs
+// the sign-in token, so it is fetched and shown from a blob: URL, released when the page changes.
+function ManuscriptPreview({ submissionId, isPdf }) {
+  const [url, setUrl] = useState('');
+  const [state, setState] = useState('loading');
+
+  useEffect(() => {
+    if (!isPdf) return undefined;
+    let objectUrl = '';
+    let cancelled = false;
+    setState('loading');
+
+    (async () => {
+      try {
+        const blob = await api.previewSubmission(submissionId);
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setUrl(objectUrl);
+        setState('ready');
+      } catch {
+        if (!cancelled) setState('error');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [submissionId, isPdf]);
+
+  if (!isPdf) {
+    return (
+      <div className="preview">
+        <p className="preview-state">Word documents can't be shown here. Download the file to read it.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="preview">
+      <span className="person-label">Manuscript</span>
+      {state === 'ready' ? (
+        <iframe className="preview-frame" src={url} title="Manuscript preview" />
+      ) : (
+        <p className="preview-state">
+          {state === 'loading' ? 'Opening the manuscript…' : 'The manuscript could not be shown. Try downloading it.'}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// The version this one replaces, with the feedback that prompted it, so the adviser can check the
+// requested revisions were actually made.
+function PreviousVersion({ previous, stageLabel, version }) {
+  return (
+    <section className="card previous-version">
+      <div className="card-header">
+        <h3>
+          <History size={15} aria-hidden="true" /> What was asked for in version {version - 1}
+        </h3>
+        <Link to={`/submissions/${previous.id}`} className="card-link">
+          Open version {version - 1}
+        </Link>
+      </div>
+      {previous.review_feedback ? (
+        <p className="prose">{previous.review_feedback}</p>
+      ) : (
+        <p className="muted">
+          {previous.status === 'pending'
+            ? 'That version was never reviewed.'
+            : 'No written feedback was left on that version.'}
+        </p>
+      )}
+      <p className="muted small previous-version-meta">
+        {previous.reviewer_name ?? 'Deleted user'} · {stageLabel} version {version - 1} ·{' '}
+        {previous.reviewed_at ? formatDateTime(previous.reviewed_at) : formatDateTime(previous.submitted_at)}
+      </p>
+    </section>
+  );
+}
 
 function ReviewPanel({ submissionId, studentName, onReviewed }) {
   const [note, setNote] = useState('');
@@ -153,7 +236,10 @@ export default function SubmissionDetail() {
   const { data, loading, error, reload } = useApi(() => api.getSubmission(id), [id]);
 
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
-  const { submission, thesis, comments } = data;
+  const { submission, thesis, comments, previousVersion } = data;
+  const stageLabel = STAGE_LABELS[submission.stage];
+  const isResubmission = submission.version > 1;
+  const isPdf = (submission.mime_type ?? '').includes('pdf') || (submission.file_name ?? '').toLowerCase().endsWith('.pdf');
 
   const isAdmin = user.role === 'admin';
   // Only the assigned adviser reviews; the API returns 404 to other advisers before this page loads
@@ -177,10 +263,15 @@ export default function SubmissionDetail() {
             {user.role === 'student' ? 'My thesis' : thesis.student_name}
           </Link>
         }
-        title={STAGE_LABELS[submission.stage]}
+        title={isResubmission ? `Version ${submission.version} of ${stageLabel}` : stageLabel}
         subtitle={
           <span className="header-meta">
             <SubmissionStatusBadge status={submission.status} />
+            {submission.versionsAtStage > 1 && (
+              <span className="chip">
+                Version {submission.version} of {submission.versionsAtStage}
+              </span>
+            )}
             <span className="clamp-1">{thesis.title}</span>
           </span>
         }
@@ -213,7 +304,12 @@ export default function SubmissionDetail() {
                 <p className="prose">{submission.notes}</p>
               </div>
             )}
+            {submission.has_file && <ManuscriptPreview submissionId={submission.id} isPdf={isPdf} />}
           </section>
+
+          {previousVersion && (
+            <PreviousVersion previous={previousVersion} stageLabel={stageLabel} version={submission.version} />
+          )}
 
           {submission.status !== 'pending' && <ReviewResult submission={submission} />}
 
@@ -303,7 +399,14 @@ export default function SubmissionDetail() {
               </div>
               <div>
                 <dt>Stage</dt>
-                <dd>{STAGE_LABELS[submission.stage]}</dd>
+                <dd>{stageLabel}</dd>
+              </div>
+              <div>
+                <dt>Version</dt>
+                <dd>
+                  {submission.version} of {submission.versionsAtStage}
+                  {isResubmission ? ' at this stage' : ''}
+                </dd>
               </div>
               <div>
                 <dt>Status</dt>

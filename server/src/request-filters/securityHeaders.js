@@ -10,6 +10,9 @@ const POLICY = [
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data:",
   "connect-src 'self'",
+  // The manuscript preview fetches the file with the sign-in token and shows it from a blob: URL,
+  // so frames must allow blob:. <object>/<embed> stay blocked.
+  "frame-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

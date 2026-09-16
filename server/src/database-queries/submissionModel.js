@@ -21,6 +21,42 @@ export function findById(id) {
   return db.prepare(`${SELECT_SUBMISSION} WHERE sub.id = ?`).get(id);
 }
 
+// Which attempt this is at its stage: the first upload is version 1, a resubmission is version 2,
+// and so on. Counting by submitted_at means the numbers never shift when an older one is reviewed.
+export function versionInfo(id) {
+  return db
+    .prepare(
+      `WITH numbered AS (
+         SELECT id, thesis_id, stage,
+           ROW_NUMBER() OVER (PARTITION BY thesis_id, stage ORDER BY submitted_at, id) AS version,
+           COUNT(*)     OVER (PARTITION BY thesis_id, stage) AS total
+         FROM submissions
+       )
+       SELECT version, total FROM numbered WHERE id = ?`,
+    )
+    .get(id);
+}
+
+// The submission this one replaces: the previous attempt at the same stage, with the feedback that
+// prompted the resubmission. Returns null for a first attempt.
+export function findPreviousVersion(id) {
+  return db
+    .prepare(
+      `SELECT prev.id, prev.file_name, prev.submitted_at, prev.status, prev.review_feedback, prev.reviewed_at,
+         r.name AS reviewer_name
+       FROM submission_details sub
+       JOIN submission_details prev
+         ON prev.thesis_id = sub.thesis_id
+        AND prev.stage = sub.stage
+        AND (prev.submitted_at, prev.id) < (sub.submitted_at, sub.id)
+       LEFT JOIN users r ON r.id = prev.reviewer_id
+       WHERE sub.id = ?
+       ORDER BY prev.submitted_at DESC, prev.id DESC
+       LIMIT 1`,
+    )
+    .get(id);
+}
+
 export function getStoredName(id) {
   return db.prepare('SELECT stored_name FROM submissions WHERE id = ?').get(id)?.stored_name ?? null;
 }

@@ -20,7 +20,15 @@ function loadSubmission(user, rawId) {
 
 export function getSubmission(req, res) {
   const { submission, thesis } = loadSubmission(req.user, req.params.id);
-  res.json({ submission, thesis, comments: Comment.listBySubmission(submission.id) });
+  const { version, total } = Submission.versionInfo(submission.id);
+  res.json({
+    submission: { ...submission, version, versionsAtStage: total },
+    thesis,
+    comments: Comment.listBySubmission(submission.id),
+    // What this version replaces, so an adviser can check the requested revisions were made.
+    // Explicitly null for a first attempt: an undefined would be dropped from the JSON entirely.
+    previousVersion: Submission.findPreviousVersion(submission.id) ?? null,
+  });
 }
 
 export function reviewSubmission(req, res) {

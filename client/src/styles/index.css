@@ -1938,6 +1938,58 @@ a.bar-row:hover .bar-label {
   border-top: 1px solid var(--border);
 }
 
+/* Manuscript shown in the page, so a review needs no download */
+.preview {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.preview-frame {
+  display: block;
+  width: 100%;
+  height: min(70vh, 620px);
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+}
+
+.preview-state {
+  display: grid;
+  place-items: center;
+  min-height: 92px;
+  margin-top: 8px;
+  padding: 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .preview-frame {
+    height: 60vh;
+  }
+}
+
+/* The feedback that prompted this resubmission */
+.previous-version {
+  border-left: 3px solid var(--warning);
+}
+
+.previous-version .card-header h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.previous-version-meta {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
 .notes .prose {
   margin-top: 6px;
 }

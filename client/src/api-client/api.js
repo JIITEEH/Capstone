@@ -97,6 +97,12 @@ export const api = {
   getSubmission: (id) => request(`/submissions/${id}`),
   reviewSubmission: (id, data) => request(`/submissions/${id}/review`, { method: 'PATCH', body: data }),
   addComment: (id, body) => request(`/submissions/${id}/comments`, { method: 'POST', body: { body } }),
+  // The file itself, for showing in the page. The request needs the sign-in token, so the page
+  // can't point an iframe straight at the API; it renders this blob instead.
+  async previewSubmission(id) {
+    const res = await request(`/submissions/${id}/file`, { raw: true });
+    return res.blob();
+  },
   async downloadSubmission(id, fileName) {
     const res = await request(`/submissions/${id}/file`, { raw: true });
     const url = URL.createObjectURL(await res.blob());
