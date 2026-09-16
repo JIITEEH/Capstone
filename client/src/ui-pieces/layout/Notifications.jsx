@@ -3,33 +3,38 @@ import { Link, useLocation } from 'react-router';
 import { Bell } from 'lucide-react';
 import { useAuth } from '../../shared-state/AuthContext.jsx';
 import { api } from '../../api-client/api.js';
-import { parseDate, plural } from '../../helpers/format.js';
+import { plural, timeAgo } from '../../helpers/format.js';
 import ReminderList from '../dashboard/ReminderCard.jsx';
 import { Spinner } from '../basics/Feedback.jsx';
 
-const SOON_MS = 24 * 60 * 60 * 1000;
 const REFRESH_MS = 60 * 1000;
-const MAX_SHOWN = 5;
+const UPCOMING_SHOWN = 3;
 
-const EMPTY_TEXT = {
-  student: 'No upcoming meetings. Your adviser will schedule consultations here.',
-  adviser: 'Nothing scheduled. Plan a consultation from the Schedule page.',
-  admin: 'Nothing scheduled. Set up defenses from the Schedule page.',
+const EMPTY_UPCOMING = {
+  student: 'No upcoming meetings.',
+  adviser: 'Nothing scheduled.',
+  admin: 'Nothing scheduled.',
 };
 
-// Bell button with a popover of upcoming consultations and defenses.
-// The badge counts events starting within the next 24 hours.
+// Bell button with a popover. The badge counts unread notifications: reviews, comments, new
+// submissions, adviser assignments, and scheduled events. Upcoming events are listed beneath.
 export default function Notifications() {
   const { user } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [feed, setFeed] = useState(null);
   const [events, setEvents] = useState(null);
   const [error, setError] = useState('');
   const ref = useRef(null);
 
   const load = useCallback(async () => {
     try {
-      setEvents(await api.listSchedules({ range: 'upcoming' }));
+      const [notifications, upcoming] = await Promise.all([
+        api.listNotifications(),
+        api.listSchedules({ range: 'upcoming' }),
+      ]);
+      setFeed(notifications);
+      setEvents(upcoming);
       setError('');
     } catch (err) {
       setError(err.message);
@@ -67,8 +72,27 @@ export default function Notifications() {
     };
   }, [open, load]);
 
-  const soonCount = (events ?? []).filter((event) => parseDate(event.starts_at).getTime() - Date.now() < SOON_MS).length;
-  const buttonLabel = soonCount ? `Reminders, ${plural(soonCount, 'event')} within 24 hours` : 'Reminders';
+  // Marks it read as you follow it, so opening the thing is enough to dismiss it
+  function follow(notification) {
+    if (notification.read_at) return;
+    setFeed((prev) => ({
+      unread: Math.max(0, prev.unread - 1),
+      notifications: prev.notifications.map((n) => (n.id === notification.id ? { ...n, read_at: 'now' } : n)),
+    }));
+    api.markNotificationRead(notification.id).catch(() => load());
+  }
+
+  async function markAllRead() {
+    setFeed((prev) => ({ unread: 0, notifications: prev.notifications.map((n) => ({ ...n, read_at: n.read_at ?? 'now' })) }));
+    try {
+      await api.markAllNotificationsRead();
+    } catch {
+      load();
+    }
+  }
+
+  const unread = feed?.unread ?? 0;
+  const buttonLabel = unread ? `Notifications, ${plural(unread, 'unread')}` : 'Notifications';
 
   return (
     <div className="notif" ref={ref}>
@@ -82,37 +106,63 @@ export default function Notifications() {
         onClick={() => setOpen((value) => !value)}
       >
         <Bell size={21} />
-        {soonCount > 0 && (
+        {unread > 0 && (
           <span className="notif-badge" aria-hidden="true">
-            {soonCount}
+            {unread > 9 ? '9+' : unread}
           </span>
         )}
       </button>
       {open && (
-        <div className="notif-panel" role="dialog" aria-label="Reminders">
+        <div className="notif-panel" role="dialog" aria-label="Notifications">
           <div className="notif-head">
-            <h2>Reminders</h2>
-            {events?.length > 0 && <span className="notif-count">{plural(events.length, 'upcoming event')}</span>}
+            <h2>Notifications</h2>
+            {unread > 0 && (
+              <button type="button" className="notif-mark-all" onClick={markAllRead}>
+                Mark all as read
+              </button>
+            )}
           </div>
-          {error && !events ? (
+
+          {error && !feed ? (
             <p className="form-error">{error}</p>
-          ) : events ? (
-            <>
-              <ReminderList
-                events={events.slice(0, MAX_SHOWN)}
-                emptyText={EMPTY_TEXT[user.role]}
-                showStudent={user.role !== 'student'}
-              />
-              {events.length > 0 && (
-                <Link to="/schedule" className="notif-footer">
-                  {events.length > MAX_SHOWN ? `View all ${events.length} events` : 'View full schedule'}
-                </Link>
-              )}
-            </>
-          ) : (
+          ) : !feed ? (
             <div className="notif-loading">
               <Spinner />
             </div>
+          ) : (
+            <>
+              {feed.notifications.length === 0 ? (
+                <p className="notif-empty">You're all caught up.</p>
+              ) : (
+                <ul className="notif-list">
+                  {feed.notifications.map((n) => (
+                    <li key={n.id} className={`notif-item${n.read_at ? '' : ' unread'}`}>
+                      <Link to={n.link || '/'} onClick={() => follow(n)}>
+                        <span className="notif-dot" aria-hidden="true" />
+                        <span className="notif-item-title">
+                          {!n.read_at && <span className="sr-only">Unread: </span>}
+                          {n.title}
+                        </span>
+                        {n.body && <span className="notif-item-body">{n.body}</span>}
+                        <span className="notif-item-time">{timeAgo(n.created_at)}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="notif-section">
+                <h3 className="notif-section-title">Coming up</h3>
+                <ReminderList
+                  events={(events ?? []).slice(0, UPCOMING_SHOWN)}
+                  emptyText={EMPTY_UPCOMING[user.role]}
+                  showStudent={user.role !== 'student'}
+                />
+                <Link to="/schedule" className="notif-footer">
+                  {events?.length > UPCOMING_SHOWN ? `View all ${events.length} events` : 'View full schedule'}
+                </Link>
+              </div>
+            </>
           )}
         </div>
       )}

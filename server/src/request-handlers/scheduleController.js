@@ -1,6 +1,7 @@
 import { MAX_PANELISTS, MEETING_MODES, SCHEDULE_STATUSES, SCHEDULE_TYPES } from '../constants.js';
 import { transaction } from '../database/index.js';
 import * as Activity from '../database-queries/activityModel.js';
+import * as Notification from '../database-queries/notificationModel.js';
 import * as Schedule from '../database-queries/scheduleModel.js';
 import * as Thesis from '../database-queries/thesisModel.js';
 import * as User from '../database-queries/userModel.js';
@@ -104,6 +105,14 @@ export function createSchedule(req, res) {
     const id = Schedule.create({ ...fields, thesis_id: thesis.id, type, created_by: user.id });
     Schedule.setPanelists(id, panelistIds);
     Activity.log(thesis.id, user.id, `scheduled a ${SCHEDULE_TYPES[type].toLowerCase()}`);
+    Notification.notify({
+      recipients: [...Notification.thesisParticipants(thesis.id), ...panelistIds],
+      actorId: user.id,
+      type: 'schedule.created',
+      title: `${SCHEDULE_TYPES[type]} scheduled`,
+      body: `${fields.title} · ${thesis.title}`,
+      link: '/schedule',
+    });
     return Schedule.findById(id);
   });
   res.status(201).json(withSchedulePermissions(user, schedule));

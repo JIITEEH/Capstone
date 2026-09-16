@@ -3,6 +3,7 @@ import { REVIEW_DECISIONS, STAGES } from '../constants.js';
 import { transaction } from '../database/index.js';
 import * as Activity from '../database-queries/activityModel.js';
 import * as Comment from '../database-queries/commentModel.js';
+import * as Notification from '../database-queries/notificationModel.js';
 import * as Review from '../database-queries/reviewModel.js';
 import * as Submission from '../database-queries/submissionModel.js';
 import * as Thesis from '../database-queries/thesisModel.js';
@@ -51,6 +52,14 @@ export function reviewSubmission(req, res) {
       req.user.id,
       decision === 'approved' ? `approved ${stage}` : `requested revisions on ${stage}`,
     );
+    Notification.notify({
+      recipients: Thesis.listMembers(thesis.id).map((member) => member.id),
+      actorId: req.user.id,
+      type: decision === 'approved' ? 'submission.approved' : 'submission.revisions_requested',
+      title: decision === 'approved' ? `${stage} approved` : `Revisions requested on ${stage}`,
+      body: thesis.title,
+      link: `/submissions/${submission.id}`,
+    });
     return Submission.findById(submission.id);
   });
   res.json(updated);
@@ -63,6 +72,14 @@ export function addComment(req, res) {
   const comment = transaction(() => {
     const created = Comment.create({ submissionId: submission.id, authorId: req.user.id, body });
     Activity.log(thesis.id, req.user.id, `commented on ${STAGES[submission.stage]}`);
+    Notification.notify({
+      recipients: Notification.thesisParticipants(thesis.id),
+      actorId: req.user.id,
+      type: 'comment.added',
+      title: `${req.user.name} commented on ${STAGES[submission.stage]}`,
+      body: body.length > 140 ? `${body.slice(0, 137)}…` : body,
+      link: `/submissions/${submission.id}`,
+    });
     return created;
   });
   res.status(201).json(comment);

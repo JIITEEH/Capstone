@@ -2,6 +2,7 @@ import { MAX_GROUP_SIZE, STAGES, THESIS_STATUSES } from '../constants.js';
 import { transaction } from '../database/index.js';
 import * as Activity from '../database-queries/activityModel.js';
 import * as Audit from '../database-queries/auditModel.js';
+import * as Notification from '../database-queries/notificationModel.js';
 import * as Schedule from '../database-queries/scheduleModel.js';
 import * as Submission from '../database-queries/submissionModel.js';
 import * as Thesis from '../database-queries/thesisModel.js';
@@ -130,6 +131,24 @@ export function assignAdviser(req, res) {
       targetLabel: thesis.title,
       details: `${thesis.adviser_name ?? 'No adviser'} → ${adviser?.name ?? 'No adviser'}`,
     });
+    if (adviser) {
+      Notification.notify({
+        recipients: [adviser.id],
+        actorId: req.user.id,
+        type: 'adviser.assigned',
+        title: 'You have a new advisee',
+        body: thesis.title,
+        link: `/theses/${thesis.id}`,
+      });
+    }
+    Notification.notify({
+      recipients: Thesis.listMembers(thesis.id).map((member) => member.id),
+      actorId: req.user.id,
+      type: adviser ? 'adviser.assigned' : 'adviser.removed',
+      title: adviser ? `${adviser.name} is now your adviser` : 'Your adviser was removed',
+      body: thesis.title,
+      link: '/thesis',
+    });
     return result;
   });
   res.json(updated);
@@ -211,6 +230,14 @@ export function addMember(req, res) {
   transaction(() => {
     Thesis.addMember(thesis.id, student.id);
     Activity.log(thesis.id, req.user.id, `added ${student.name} to the group`);
+    Notification.notify({
+      recipients: [student.id],
+      actorId: req.user.id,
+      type: 'group.added',
+      title: 'You were added to a thesis group',
+      body: thesis.title,
+      link: '/thesis',
+    });
   });
   res.status(201).json(Thesis.listMembers(thesis.id));
 }
@@ -271,6 +298,15 @@ export function createSubmission(req, res) {
       const created = Submission.create({ thesisId: thesis.id, stage, notes, file: req.file });
       Thesis.recomputeStatus(thesis.id);
       Activity.log(thesis.id, req.user.id, `submitted ${STAGES[stage]}`);
+      // The adviser has something to review; groupmates see it arrive too
+      Notification.notify({
+        recipients: Notification.thesisParticipants(thesis.id),
+        actorId: req.user.id,
+        type: 'submission.created',
+        title: `${STAGES[stage]} submitted for review`,
+        body: `${req.user.name} · ${thesis.title}`,
+        link: `/submissions/${created.id}`,
+      });
       return created;
     });
     res.status(201).json(submission);

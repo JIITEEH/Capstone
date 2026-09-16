@@ -114,6 +114,11 @@ export const api = {
   },
 
   dashboard: () => request('/dashboard'),
+
+  // Notifications: the signed-in user's own, newest first, with an unread count
+  listNotifications: () => request('/notifications'),
+  markNotificationRead: (id) => request(`/notifications/${id}/read`, { method: 'POST' }),
+  markAllNotificationsRead: () => request('/notifications/read-all', { method: 'POST' }),
   // Theses, people, and submissions the signed-in user can open, grouped
   search: (q) => request(`/search${toQuery({ q })}`),
 
