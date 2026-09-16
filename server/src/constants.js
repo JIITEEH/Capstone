@@ -29,6 +29,20 @@ export const SCHEDULE_TYPES = {
 
 export const SCHEDULE_STATUSES = ['scheduled', 'completed', 'cancelled'];
 
+// What each panelist scores a defense on, from 1 (poor) to 5 (excellent)
+export const DEFENSE_CRITERIA = {
+  content: 'Content and significance',
+  methodology: 'Methodology and analysis',
+  presentation: 'Presentation',
+  answers: "Answers to the panel's questions",
+};
+
+export const DEFENSE_VERDICTS = {
+  passed: 'Passed',
+  passed_with_revisions: 'Passed with revisions',
+  failed: 'Failed',
+};
+
 export const MEETING_MODES = ['in_person', 'online'];
 
 export const MAX_PANELISTS = 5;

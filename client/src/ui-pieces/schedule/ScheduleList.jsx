@@ -119,6 +119,11 @@ export default function ScheduleList({
                   </span>
                 )}
                 {!compact && event.notes && <p className="event-notes">{event.notes}</p>}
+                {!compact && event.type !== 'consultation' && event.status !== 'cancelled' && (
+                  <Link to={`/defenses/${event.id}`} className="event-defense-link">
+                    {onPanel && event.status === 'scheduled' ? 'Score this defense' : 'Scores and verdict'}
+                  </Link>
+                )}
               </div>
 
               {!compact && (event.can_manage || event.can_delete) && (

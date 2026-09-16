@@ -25,6 +25,7 @@ const ACTIONS = {
   'thesis.adviser_removed': 'removed an adviser',
   'thesis.status_overridden': 'overrode a status',
   'thesis.deleted': 'deleted a thesis',
+  'thesis.defense_verdict': 'recorded a defense verdict',
 };
 
 export default function AuditLog() {

@@ -51,6 +51,9 @@ Every rule below is enforced by the API. The UI also hides what a role can't use
 | Schedule defenses and assign panelists    | —                          | —                                | ✅                           |
 | Edit, complete, or cancel events          | —                          | Own advisees' consultations      | ✅                           |
 | Delete events                             | —                          | —                                | ✅                           |
+| Score a defense                           | —                          | Panels they sit on               | —                            |
+| Record a defense verdict                  | —                          | —                                | ✅                           |
+| See a defense result                      | Own, once the verdict is in | Advisees', and panels they sit on | All                         |
 | Assign advisers, override status, delete theses | —                    | —                                | ✅                           |
 | Search theses, people, and submissions    | Own group, adviser, and work | Advisees and their work        | All                          |
 | Manage users                              | —                          | —                                | ✅                           |

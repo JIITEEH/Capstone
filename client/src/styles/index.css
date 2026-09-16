@@ -4587,6 +4587,255 @@ a.people-row:hover {
 }
 
 /* ==========================================================================
+   Defense scores and verdict
+   ========================================================================== */
+.event-defense-link {
+  align-self: flex-start;
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* One row per criterion: a 1-5 scale that reads as buttons but is a real radio group */
+.rubric {
+  gap: 18px;
+}
+
+.rubric-row {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.rubric-row legend {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.rubric-scale {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rubric-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 8px 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.rubric-option:hover {
+  border-color: var(--primary-light);
+}
+
+.rubric-option.selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-text);
+}
+
+/* Hidden but still focusable, so the scale works from the keyboard */
+.rubric-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.rubric-option:has(.rubric-input:focus-visible) {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.rubric-number {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.rubric-word {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.rubric-option.selected .rubric-word {
+  color: var(--primary-text);
+}
+
+@media (max-width: 480px) {
+  .rubric-word {
+    display: none;
+  }
+}
+
+.verdict-choices {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.verdict-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.verdict-choice.selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.verdict-banner {
+  display: grid;
+  gap: 12px;
+}
+
+.verdict-banner-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.verdict-label {
+  display: block;
+  font-size: 22px;
+}
+
+.verdict-score {
+  display: grid;
+  margin-left: auto;
+  text-align: right;
+}
+
+.verdict-score strong {
+  font-size: 22px;
+}
+
+.verdict-success {
+  border-left: 4px solid var(--success);
+}
+
+.verdict-warning {
+  border-left: 4px solid var(--warning);
+}
+
+.verdict-danger {
+  border-left: 4px solid var(--danger);
+}
+
+.scores-total td {
+  background: var(--surface-muted);
+}
+
+/* Explanation above a form inside a card */
+.card-intro {
+  margin: 0 0 18px;
+}
+
+/* On a wide screen: names stay on one line, and scores are short centred numbers that line up.
+   No fixed column width, which pushed the Average column past the card's edge. On a phone the
+   table is already stacked into cards, where centring would misplace the row labels. */
+@media (min-width: 641px) {
+  .scores-table th:first-child,
+  .scores-table td:first-child {
+    white-space: nowrap;
+  }
+
+  .scores-table td:not(:first-child),
+  .scores-table th:not(:first-child) {
+    padding-inline: 12px;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+}
+
+.remarks-title {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.remarks-list {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.remarks-list .prose {
+  margin-top: 4px;
+}
+
+/* A defense result prints as a clean sheet: no navigation, no buttons, nothing animated */
+.print-only {
+  display: none;
+}
+
+@media print {
+  .sidebar,
+  .topbar,
+  .nav-backdrop,
+  .toast-region,
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block;
+  }
+
+  .print-heading {
+    margin-bottom: 12px;
+    color: #444;
+    font-size: 12px;
+  }
+
+  body,
+  .app,
+  .app-main,
+  .page {
+    background: #fff !important;
+  }
+
+  .app {
+    display: block;
+  }
+
+  .detail-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .card {
+    border: 1px solid #ccc;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+
+  .stagger > *,
+  .page-enter {
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
    Tables as cards on a phone
    --------------------------------------------------------------------------
    A table with six columns cannot fit a 360px screen, and scrolling it

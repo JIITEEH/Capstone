@@ -151,6 +151,11 @@ export const api = {
     saveBlob(await res.blob(), fileName || 'manuscript');
   },
 
+  // Defenses: each panelist's scores and the panel's verdict
+  getDefense: (id) => request(`/defenses/${id}`),
+  saveDefenseEvaluation: (id, data) => request(`/defenses/${id}/evaluation`, { method: 'PUT', body: data }),
+  recordDefenseVerdict: (id, data) => request(`/defenses/${id}/verdict`, { method: 'POST', body: data }),
+
   // Schedules
   listSchedules: (params) => request(`/schedules${toQuery(params)}`),
   createSchedule: (data) => request('/schedules', { method: 'POST', body: data }),
