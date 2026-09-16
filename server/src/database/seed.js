@@ -27,6 +27,14 @@ if (adminPasswordFromEnv !== undefined && adminPasswordFromEnv.length < 8) {
 }
 const adminPassword = adminPasswordFromEnv || randomBytes(12).toString('base64url');
 
+// Set SEED_ADMIN_EMAIL in server/.env to sign in as the admin with your own address.
+// Stored lowercase because login lowercases what people type
+const adminEmail = (process.env.SEED_ADMIN_EMAIL || 'admin@example.edu').trim().toLowerCase();
+if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
+  console.error('SEED_ADMIN_EMAIL must be a valid email address. Nothing was changed.');
+  process.exit(1);
+}
+
 for (const suffix of ['', '-wal', '-shm', '-journal']) {
   fs.rmSync(config.databasePath + suffix, { force: true });
 }
@@ -164,7 +172,7 @@ db.exec('BEGIN');
 
 const admin = user(
   'System Administrator',
-  'jtcatimbang1019@gmail.com',
+  adminEmail,
   'admin',
   'Graduate School Office',
   '-90 days',
@@ -261,9 +269,9 @@ console.log('Database seeded.');
 console.log(`  Adviser: maria.santos@tms.edu  (password: ${DEMO_PASSWORD})`);
 console.log(`  Student: ana.cruz@tms.edu      (password: ${DEMO_PASSWORD})`);
 if (adminPasswordFromEnv) {
-  console.log('  Admin:   jtcatimbang1019@gmail.com  (password: the SEED_ADMIN_PASSWORD from .env)');
+  console.log(`  Admin:   ${adminEmail}  (password: the SEED_ADMIN_PASSWORD from .env)`);
 } else {
-  console.log(`  Admin:   jtcatimbang1019@gmail.com  (password: ${adminPassword})`);
+  console.log(`  Admin:   ${adminEmail}  (password: ${adminPassword})`);
   console.log('  This admin password was generated just now and is not saved anywhere. Copy it,');
   console.log('  or set SEED_ADMIN_PASSWORD in server/.env and seed again.');
 }

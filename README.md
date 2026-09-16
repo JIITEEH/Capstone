@@ -21,11 +21,11 @@ Open http://localhost:5173. The API runs at http://localhost:3001/api.
 
 ### Demo accounts
 
-The adviser and student accounts use the password **`password123`**. The admin account does not: set `SEED_ADMIN_PASSWORD` in `server/.env` before seeding, or leave it unset and copy the random password that `npm run db:seed` prints. In development, the login page has buttons that fill these accounts in.
+The adviser and student accounts use the password **`password123`**. The admin account does not: set `SEED_ADMIN_PASSWORD` in `server/.env` before seeding, or leave it unset and copy the random password that `npm run db:seed` prints. The admin signs in as `admin@example.edu` unless you set `SEED_ADMIN_EMAIL`. In development, the login page has buttons that fill these accounts in.
 
 | Role    | Email                  | What you'll see                                                        |
 | ------- | ---------------------- | ---------------------------------------------------------------------- |
-| Admin   | `jtcatimbang1019@gmail.com` | System stats, all theses and events, user management                   |
+| Admin   | `admin@example.edu`    | System stats, all theses and events, user management                   |
 | Adviser | `maria.santos@tms.edu` | One advisee, one submission to review, upcoming consultation and defense |
 | Student | `ana.cruz@tms.edu`     | Two stages approved, Chapters 4–5 under review, final defense scheduled |
 
