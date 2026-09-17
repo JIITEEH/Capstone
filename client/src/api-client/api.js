@@ -192,6 +192,10 @@ export const api = {
   // Audit log (admin): newest first; pass `before` from the previous page to go further back
   listAudit: (params) => request(`/audit${toQuery(params)}`),
 
+  // Outgoing email (admin): the settings in use, and a test sent to the admin's own address
+  emailStatus: () => request('/email'),
+  sendTestEmail: () => request('/email/test', { method: 'POST' }),
+
   // Users (admin)
   listUsers: (params) => request(`/users${toQuery(params)}`),
   listAdvisers: () => request('/users/advisers'),

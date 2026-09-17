@@ -4,6 +4,7 @@ import archiveRoutes from './archiveRoutes.js';
 import auditRoutes from './auditRoutes.js';
 import authRoutes from './authRoutes.js';
 import dashboardRoutes from './dashboardRoutes.js';
+import emailRoutes from './emailRoutes.js';
 import invitationRoutes from './invitationRoutes.js';
 import defenseRoutes from './defenseRoutes.js';
 import notificationRoutes from './notificationRoutes.js';
@@ -33,5 +34,6 @@ router.use('/invitations', requireAuth, requireRole('student'), invitationRoutes
 router.use('/users', requireAuth, requireRole('admin'), userRoutes);
 router.use('/audit', requireAuth, requireRole('admin'), auditRoutes);
 router.use('/terms', requireAuth, requireRole('admin'), termRoutes);
+router.use('/email', requireAuth, requireRole('admin'), emailRoutes);
 
 export default router;

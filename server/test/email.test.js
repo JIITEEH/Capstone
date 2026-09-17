@@ -11,6 +11,12 @@ const api = await startApi();
 let outbox = [];
 let behaviour = 'deliver';
 const fakeMailer = {
+  verify() {
+    if (behaviour === 'bad-login') {
+      return Promise.reject(Object.assign(new Error('535 Username and Password not accepted'), { code: 'EAUTH' }));
+    }
+    return Promise.resolve(true);
+  },
   sendMail(message) {
     outbox.push(message);
     if (behaviour === 'fail') return Promise.reject(new Error('Mail server refused the connection'));
@@ -101,5 +107,67 @@ describe('the email itself', () => {
     useTransport(null);
     const result = await sendEmail({ to: 'x@tms.edu', subject: 'Test', text: 'Hello' });
     assert.deepEqual(result, { skipped: true });
+  });
+});
+
+describe('admin email check', () => {
+  let admin;
+  let student;
+
+  beforeEach(async () => {
+    admin ??= await makeUser(api, { name: 'Mail Admin', email: 'mail-admin@tms.edu', role: 'admin' });
+    student ??= await makeUser(api, { name: 'Not Admin', email: 'not-admin@tms.edu' });
+  });
+
+  it('shows admins the settings, never the SMTP login', async () => {
+    const res = await api.get('/email', { token: admin.token });
+
+    assert.equal(res.status, 200);
+    assert.equal(res.data.configured, true);
+    assert.ok('from' in res.data);
+    assert.ok(!('user' in res.data) && !('pass' in res.data));
+  });
+
+  it('is for admins only', async () => {
+    assert.equal((await api.get('/email', { token: student.token })).status, 403);
+    assert.equal((await api.post('/email/test', { token: student.token })).status, 403);
+    assert.equal(outbox.length, 0);
+  });
+
+  it("sends a test email to the admin's own address", async () => {
+    const res = await api.post('/email/test', { token: admin.token, body: { to: 'someone-else@tms.edu' } });
+
+    assert.equal(res.status, 200);
+    assert.equal(outbox.length, 1);
+    assert.equal(outbox[0].to, 'mail-admin@tms.edu', 'an admin cannot use the test to email other people');
+    assert.equal(outbox[0].subject, 'ThesisTrack test email');
+    assert.match(res.data.message, /mail-admin@tms\.edu/);
+  });
+
+  it('explains a rejected SMTP login', async () => {
+    behaviour = 'bad-login';
+    const res = await api.post('/email/test', { token: admin.token });
+
+    assert.equal(res.status, 400);
+    assert.match(res.data.error, /app password/);
+    assert.equal(outbox.length, 0);
+  });
+
+  it('reports a message the mail server refused', async () => {
+    behaviour = 'fail';
+    const res = await api.post('/email/test', { token: admin.token });
+
+    assert.equal(res.status, 400);
+    assert.match(res.data.error, /Mail server refused the connection/);
+  });
+
+  it('says email is not set up when there is no mail server', async () => {
+    useTransport(null);
+    const status = await api.get('/email', { token: admin.token });
+    const res = await api.post('/email/test', { token: admin.token });
+
+    assert.equal(status.data.configured, false);
+    assert.equal(res.status, 400);
+    assert.match(res.data.error, /SMTP_HOST/);
   });
 });

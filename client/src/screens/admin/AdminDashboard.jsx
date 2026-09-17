@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { BookOpen, CircleCheck, FileText, GraduationCap, Plus, ScrollText, Users } from 'lucide-react';
 import DashboardHeader from '../../ui-pieces/dashboard/DashboardHeader.jsx';
+import EmailStatusCard from '../../ui-pieces/dashboard/EmailStatusCard.jsx';
 import PeopleCard from '../../ui-pieces/dashboard/PeopleCard.jsx';
 import ProgressGauge, { groupStatuses } from '../../ui-pieces/dashboard/ProgressGauge.jsx';
 import TaskListCard from '../../ui-pieces/dashboard/TaskListCard.jsx';
@@ -119,6 +120,7 @@ export default function AdminDashboard() {
             emptyIcon={CircleCheck}
             emptyTitle="Every thesis has an adviser"
           />
+          <EmailStatusCard />
         </div>
       </div>
     </div>

@@ -60,6 +60,7 @@ Every rule below is enforced by the API. The UI also hides what a role can't use
 | Search theses, people, and submissions    | Own group, adviser, and work | Advisees and their work        | All                          |
 | Manage users                              | —                          | —                                | ✅                           |
 | View the audit log of admin changes       | —                          | —                                | ✅                           |
+| Check email settings, send a test email   | —                          | —                                | ✅                           |
 | Export theses and adviser workload to CSV | —                          | —                                | ✅                           |
 
 Users who try to open something outside their role get a 403 (wrong role) or 404 (a record they aren't allowed to see).
@@ -322,6 +323,7 @@ Capstone/
 | DELETE       | `/api/schedules/:id`                       | Admin                                |
 | *            | `/api/users`, `/api/users/advisers`        | Admin                                |
 | *            | `/api/terms`, `/api/terms/:id`             | Admin                                |
+| GET, POST    | `/api/email`, `/api/email/test`            | Admin                                |
 | PATCH        | `/api/theses/:id/term`                     | Admin                                |
 | PATCH        | `/api/theses/:id/archive`                  | Admin                                |
 | GET          | `/api/archive`, `/api/archive/:id`, `/api/archive/:id/manuscript` | Signed in (completed, archived theses only) |

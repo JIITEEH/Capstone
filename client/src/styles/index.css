@@ -4413,6 +4413,30 @@ fieldset.field {
   margin-top: 20px;
 }
 
+/* Email status */
+.email-status {
+  gap: 12px;
+}
+
+.email-status .dash-card-head {
+  margin-bottom: 0;
+}
+
+.email-status .dash-card-head h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+}
+
+.email-status p {
+  overflow-wrap: anywhere;
+}
+
+.email-status .btn {
+  align-self: flex-start;
+}
+
 /* Task list */
 .tasks {
   flex: 1;

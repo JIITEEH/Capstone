@@ -1,6 +1,6 @@
 import app from './app.js';
 import config from './config/index.js';
-import { isEmailConfigured } from './helpers/email.js';
+import { checkEmailConnection, emailSettings, isEmailConfigured } from './helpers/email.js';
 
 app.listen(config.port, () => {
   console.log(`API running at http://localhost:${config.port}`);
@@ -12,5 +12,13 @@ app.listen(config.port, () => {
   }
   if (config.env === 'production' && !isEmailConfigured()) {
     console.warn('SMTP_HOST is not set, so password reset emails will not be sent. See DEPLOYMENT.md.');
+  }
+  // A wrong password or blocked port otherwise only shows up when someone's reset email goes missing
+  if (isEmailConfigured()) {
+    checkEmailConnection().then(({ ok, error }) => {
+      const { host, from } = emailSettings();
+      if (ok) console.log(`Email ready: sending through ${host} as ${from}`);
+      else console.warn(`Email is not working, so password reset emails will not arrive. ${error}`);
+    });
   }
 });

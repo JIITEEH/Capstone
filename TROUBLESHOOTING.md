@@ -126,12 +126,15 @@ full computer lab is never locked out together. Restarting the server clears the
 
 ### "Password reset emails never arrive"
 
-1. Check the server log for `Could not email`. The line after it says why.
+1. Sign in as an admin and choose **Send test email** on the dashboard's **Email** card. It says what the
+   mail server objected to. The server log also shows `Email is not working` at startup, and `Could not email`
+   with the reason for each failed send.
 2. `SMTP_HOST` unset in `server/.env` means nothing is sent. In development the email is printed to the
    console instead; in production the server warns at startup.
 3. With Gmail, `SMTP_PASS` must be an **app password**, not the account password. See `DEPLOYMENT.md`, section 4.
 4. Look in spam. The request page answers the same way whether or not the email exists or sent, on purpose.
 5. Code: `server/src/helpers/email.js`, called from `request-handlers/authController.js` → `forgotPassword`.
+   The admin check is `request-handlers/emailController.js`; client `ui-pieces/dashboard/EmailStatusCard.jsx`.
 
 ### "A new student can't start a thesis" or "I can't invite a classmate to my group"
 

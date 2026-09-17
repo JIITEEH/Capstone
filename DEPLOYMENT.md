@@ -82,8 +82,11 @@ server prints a warning at startup when `NODE_ENV=production` and `SMTP_HOST` is
    MAIL_FROM=ThesisTrack <thesistrack.yourschool@gmail.com>
    ```
 
-5. Restart, then request a password reset for your own account and check it arrives. Look in spam the
-   first time; marking it "not spam" helps later ones land in the inbox.
+5. Restart. The server logs `Email ready: sending through smtp.gmail.com` when it can sign in to the mail
+   server, or `Email is not working` with the reason when it can't.
+6. Sign in as an admin and choose **Send test email** on the **Email** card of the dashboard. It sends to
+   your own address and shows the mail server's answer, for example that Gmail wants an app password.
+   Look in spam the first time; marking it "not spam" helps later ones land in the inbox.
 
 Your school's own mail server works the same way: ask IT for the SMTP host, port, and an account.
 
