@@ -221,6 +221,28 @@ export function setTerm(req, res) {
   res.json(updated);
 }
 
+// Admins keep a thesis out of the archive, or put it back. Only completed theses are shown there.
+export function setArchived(req, res) {
+  const thesis = getAccessibleThesis(req.user, req.params.id);
+  if (typeof req.body?.inArchive !== 'boolean') throw new HttpError(400, 'inArchive must be true or false');
+  const inArchive = req.body.inArchive ? 1 : 0;
+  if (inArchive === thesis.in_archive) return res.json(thesis);
+
+  const updated = transaction(() => {
+    const result = Thesis.update(thesis.id, { in_archive: inArchive });
+    Activity.log(thesis.id, req.user.id, inArchive ? 'included the thesis in the archive' : 'kept the thesis out of the archive');
+    Audit.record({
+      actor: req.user,
+      action: inArchive ? 'thesis.archive_shown' : 'thesis.archive_hidden',
+      targetType: 'thesis',
+      targetId: thesis.id,
+      targetLabel: thesis.title,
+    });
+    return result;
+  });
+  res.json(updated);
+}
+
 export function deleteThesis(req, res) {
   const thesis = getAccessibleThesis(req.user, req.params.id);
   const files = Submission.storedNamesForThesis(thesis.id);

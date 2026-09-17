@@ -16,6 +16,8 @@ const ThesesList = lazy(() => import('./screens/ThesesList.jsx'));
 const Users = lazy(() => import('./screens/admin/Users.jsx'));
 const AuditLog = lazy(() => import('./screens/admin/AuditLog.jsx'));
 const Terms = lazy(() => import('./screens/admin/Terms.jsx'));
+const Archive = lazy(() => import('./screens/Archive.jsx'));
+const ArchiveDetail = lazy(() => import('./screens/ArchiveDetail.jsx'));
 const DefenseDetail = lazy(() => import('./screens/DefenseDetail.jsx'));
 const ThesisDetail = lazy(() => import('./screens/ThesisDetail.jsx'));
 const SubmissionDetail = lazy(() => import('./screens/SubmissionDetail.jsx'));
@@ -39,6 +41,8 @@ export default function App() {
         <Route path="theses/:id" element={<RequireRole roles={['adviser', 'admin']}><ThesisDetail /></RequireRole>} />
         <Route path="submissions/:id" element={<SubmissionDetail />} />
         <Route path="schedule" element={<Schedule />} />
+        <Route path="archive" element={<Archive />} />
+        <Route path="archive/:id" element={<ArchiveDetail />} />
         {/* Every role can open a defense it can see; the server decides what each one is shown */}
         <Route path="defenses/:id" element={<DefenseDetail />} />
         <Route path="users" element={<RequireRole roles={['admin']}><Users /></RequireRole>} />

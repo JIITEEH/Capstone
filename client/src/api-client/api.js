@@ -124,6 +124,16 @@ export const api = {
   // Theses, people, and submissions the signed-in user can open, grouped
   search: (q) => request(`/search${toQuery({ q })}`),
 
+  // Completed theses anyone signed in can browse
+  listArchive: (params) => request(`/archive${toQuery(params)}`),
+  getArchived: (id) => request(`/archive/${id}`),
+  async downloadArchivedManuscript(id, fallbackName) {
+    const res = await request(`/archive/${id}/manuscript`, { raw: true });
+    const disposition = res.headers.get('Content-Disposition') ?? '';
+    const fileName = /filename="([^"]+)"/.exec(disposition)?.[1] ?? fallbackName;
+    saveBlob(await res.blob(), fileName);
+  },
+
   // Theses
   listTheses: (params) => request(`/theses${toQuery(params)}`),
   exportTheses: (params) => downloadExport(`/theses/export.csv${toQuery(params)}`),
@@ -134,6 +144,7 @@ export const api = {
   updateThesisStatus: (id, status) => request(`/theses/${id}/status`, { method: 'PATCH', body: { status } }),
   deleteThesis: (id) => request(`/theses/${id}`, { method: 'DELETE' }),
   setThesisTerm: (id, termId) => request(`/theses/${id}/term`, { method: 'PATCH', body: { termId } }),
+  setThesisArchived: (id, inArchive) => request(`/theses/${id}/archive`, { method: 'PATCH', body: { inArchive } }),
 
   // Terms and their stage due dates (admin)
   listTerms: () => request('/terms'),

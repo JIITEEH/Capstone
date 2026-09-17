@@ -172,6 +172,16 @@ Deadlines come from the thesis's term. Admins manage terms on the **Terms** page
 5. Code: `server/src/database-queries/thesisModel.js` (`NEXT_DEADLINE`), `termModel.js` → `deadlinesForThesis`,
    `request-handlers/termController.js`; client `screens/admin/Terms.jsx`, `ui-pieces/thesis/Deadlines.jsx`.
 
+### "A finished thesis isn't in the archive" or "It has no Download button"
+
+1. Only theses with the status **Completed** appear. Check the status on the thesis page.
+2. An admin may have kept it out: on the thesis, **Admin controls** → **Show in the thesis archive**.
+   The audit log records who changed it.
+3. No Download button: there is no approved Final Manuscript with a file, for example when an admin set
+   the status to Completed by hand.
+4. Code: `server/src/database-queries/archiveModel.js`, `request-handlers/archiveController.js`;
+   client `screens/Archive.jsx`, `screens/ArchiveDetail.jsx`.
+
 ### "Everyone was signed out after a password change"
 
 Expected. Changing, resetting, or having an admin set a password ends every session for that account,

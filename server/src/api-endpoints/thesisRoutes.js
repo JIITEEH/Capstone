@@ -11,6 +11,7 @@ import {
   inviteMember,
   listTheses,
   removeMember,
+  setArchived,
   setTerm,
   updateStatus,
   updateThesis,
@@ -32,6 +33,7 @@ router.delete('/:id', requireRole('admin'), deleteThesis);
 router.patch('/:id/adviser', requireRole('admin'), assignAdviser);
 router.patch('/:id/status', requireRole('admin'), updateStatus);
 router.patch('/:id/term', requireRole('admin'), setTerm);
+router.patch('/:id/archive', requireRole('admin'), setArchived);
 router.post('/:id/submissions', requireRole('student'), uploadManuscript, verifyUploadContents, createSubmission);
 // Leaders invite classmates, who accept or decline; admins add directly to fix a group.
 // Any member can remove themselves to leave.

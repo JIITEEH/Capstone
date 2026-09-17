@@ -121,6 +121,22 @@ export default function AdminControls({ thesis, onChanged }) {
           <span className="field-hint">The term sets this thesis's stage due dates.</span>
         </div>
 
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={Boolean(thesis.in_archive)}
+            disabled={Boolean(busy)}
+            onChange={(e) => {
+              const inArchive = e.target.checked;
+              run('archive', () => api.setThesisArchived(thesis.id, inArchive), inArchive ? 'Shown in the archive' : 'Kept out of the archive');
+            }}
+          />
+          <span>
+            <strong>Show in the thesis archive</strong>
+            <span className="muted"> · Once completed, anyone signed in can read it and download the final manuscript</span>
+          </span>
+        </label>
+
         {error && <p className="form-error">{error}</p>}
 
         <button type="button" className="btn btn-danger-ghost" onClick={() => setConfirmDelete(true)}>

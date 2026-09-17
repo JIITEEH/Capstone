@@ -49,6 +49,7 @@ Every rule below is enforced by the API. The UI also hides what a role can't use
 | View schedule                             | Own events                 | Advisees' events + panels they sit on | All                     |
 | Schedule consultations                    | —                          | Advisees                         | ✅                           |
 | Terms and stage due dates                 | See own deadlines          | See advisees' deadlines          | ✅ Manage, move theses       |
+| Thesis archive (completed theses)         | Browse, download final manuscript | Browse, download final manuscript | Browse; keep a thesis out |
 | Schedule defenses and assign panelists    | —                          | —                                | ✅                           |
 | Edit, complete, or cancel events          | —                          | Own advisees' consultations      | ✅                           |
 | Delete events                             | —                          | —                                | ✅                           |
@@ -243,6 +244,7 @@ erDiagram
 - **`password_resets`** holds one-time reset links. Only a SHA-256 hash of each token is stored. A link expires after 1 hour and is deleted once used. The link is emailed over SMTP (see `DEPLOYMENT.md`); outside production it is also shown on the "Forgot password" page so the flow works without a mail server.
 - **`users.email_verified_at`** is empty until a student who signed up opens the link in their verification email. Until then they can sign in, but can't start a thesis or be added to a group, so nobody can register with a classmate's address and join in their place. Accounts created by an admin, and every account that existed before verification, count as verified. `email_verifications` stores the links, hashed, for 48 hours.
 - **`terms`** are semesters, each with an optional due date per stage in **`term_deadlines`**. One term is current (a partial unique index), and new theses join it through `theses.term_id`; admins can move a thesis. A thesis's next deadline is the earliest stage with a due date and nothing submitted yet; it is **overdue** once that day has passed in the server's time zone (`TZ`). Theses that existed before terms have no term, so the upgrade marks nobody overdue. A term that still has theses can't be deleted.
+- **`theses.in_archive`** decides whether a completed thesis appears in the thesis archive, which every signed-in user can search. It is on by default; an admin turns it off for confidential work. The archive shows only public details (no emails or review feedback) and only the approved final manuscript.
 - **`group_invitations`** records each invitation a group leader sends: `pending`, then `accepted`, `declined`, or `cancelled`. A partial unique index allows one pending invitation per student per group. Pending invitations hold a seat, so a group can't be over-invited. Accepting one withdraws the student's other pending invitations. Inviting a student who is already in another group still succeeds for the leader; only the student is told, when they try to accept, so leaders can't probe who is taken.
 - **`users.token_version`** ends sessions when a password changes. Each sign-in token records it, and every password change raises it, so older tokens are refused.
 - **`notifications`** holds one row per recipient, so each person reads and dismisses their own copy. Nobody is notified about their own action, and each notification is written in the same transaction as the event it describes.
@@ -321,6 +323,8 @@ Capstone/
 | *            | `/api/users`, `/api/users/advisers`        | Admin                                |
 | *            | `/api/terms`, `/api/terms/:id`             | Admin                                |
 | PATCH        | `/api/theses/:id/term`                     | Admin                                |
+| PATCH        | `/api/theses/:id/archive`                  | Admin                                |
+| GET          | `/api/archive`, `/api/archive/:id`, `/api/archive/:id/manuscript` | Signed in (completed, archived theses only) |
 
 ## Scripts
 

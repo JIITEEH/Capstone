@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireRole } from '../request-filters/auth.js';
+import archiveRoutes from './archiveRoutes.js';
 import auditRoutes from './auditRoutes.js';
 import authRoutes from './authRoutes.js';
 import dashboardRoutes from './dashboardRoutes.js';
@@ -26,6 +27,7 @@ router.use('/submissions', requireAuth, submissionRoutes);
 router.use('/schedules', requireAuth, scheduleRoutes);
 router.use('/defenses', requireAuth, defenseRoutes);
 router.use('/search', requireAuth, searchRoutes);
+router.use('/archive', requireAuth, archiveRoutes);
 router.use('/notifications', requireAuth, notificationRoutes);
 router.use('/invitations', requireAuth, requireRole('student'), invitationRoutes);
 router.use('/users', requireAuth, requireRole('admin'), userRoutes);

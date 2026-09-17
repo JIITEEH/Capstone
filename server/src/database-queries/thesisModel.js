@@ -116,7 +116,7 @@ export function create({ studentId, title, abstract, keywords, termId = null }) 
   return findById(result.lastInsertRowid);
 }
 
-const UPDATABLE = ['title', 'abstract', 'keywords', 'adviser_id', 'status', 'term_id'];
+const UPDATABLE = ['title', 'abstract', 'keywords', 'adviser_id', 'status', 'term_id', 'in_archive'];
 
 export function update(id, fields) {
   const entries = Object.entries(fields).filter(([key, value]) => UPDATABLE.includes(key) && value !== undefined);

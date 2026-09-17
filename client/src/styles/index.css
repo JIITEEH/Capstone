@@ -2257,6 +2257,58 @@ a.bar-row:hover .bar-label {
   border: 0;
 }
 
+/* Thesis archive */
+.archive-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.archive-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: break-word;
+}
+
+.archive-item:last-child {
+  border-bottom: 0;
+}
+
+.archive-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.archive-title:hover {
+  color: var(--primary);
+}
+
+.archive-abstract {
+  margin: 2px 0 4px;
+  color: var(--text-secondary);
+}
+
+.archive-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 10px 16px;
+  margin: 0;
+}
+
+.archive-facts dt {
+  color: var(--text-muted);
+}
+
+.archive-facts dd {
+  margin: 0;
+  overflow-wrap: break-word;
+}
+
 .group-adviser {
   margin-top: 16px;
   padding-top: 16px;

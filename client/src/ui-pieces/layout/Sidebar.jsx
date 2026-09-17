@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router';
 import {
+  Archive,
   BookOpen,
   CalendarDays,
   CalendarPlus,
@@ -20,11 +21,13 @@ const NAV_BY_ROLE = {
     { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
     { to: '/thesis', label: 'My Thesis', icon: BookOpen },
     { to: '/schedule', label: 'Schedule', icon: CalendarDays },
+    { to: '/archive', label: 'Archive', icon: Archive },
   ],
   adviser: [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
     { to: '/theses', label: 'My Advisees', icon: Library },
     { to: '/schedule', label: 'Schedule', icon: CalendarDays },
+    { to: '/archive', label: 'Archive', icon: Archive },
   ],
   admin: [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -32,6 +35,7 @@ const NAV_BY_ROLE = {
     { to: '/schedule', label: 'Schedule', icon: CalendarDays },
     { to: '/users', label: 'Users', icon: Users },
     { to: '/terms', label: 'Terms', icon: CalendarRange },
+    { to: '/archive', label: 'Archive', icon: Archive },
     { to: '/audit', label: 'Audit log', icon: ScrollText },
   ],
 };
