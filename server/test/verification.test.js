@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, beforeEach, describe, it } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
+import config from '../src/config/index.js';
 import db from '../src/database/index.js';
 import { migrate, MIGRATIONS_DIR } from '../src/database/migrate.js';
 import { useTransport } from '../src/helpers/email.js';
@@ -38,6 +39,19 @@ describe('signing up', () => {
     assert.equal(outbox.length, 1);
     assert.equal(outbox[0].to, 'fresh@tms.edu');
     assert.ok(outbox[0].text.includes(devVerifyUrl), 'the email carries the working link');
+  });
+
+  it('starts accounts verified in development, without sending an email', async () => {
+    config.env = 'development';
+    try {
+      const { user, devVerifyUrl } = await signUp('local@tms.edu', 'Local Tester');
+
+      assert.equal(user.email_verified, 1);
+      assert.equal(devVerifyUrl, undefined);
+      assert.equal(outbox.length, 0);
+    } finally {
+      config.env = 'test';
+    }
   });
 
   it('keeps an unverified student from starting a thesis', async () => {

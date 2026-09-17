@@ -28,6 +28,7 @@ function sendVerification(user) {
 
 // Public sign-up creates student accounts only; admins create adviser and admin accounts.
 // The student can sign in straight away, but must verify their email to start or join a thesis.
+// In development, sign-ups start verified instead, since no verification email can arrive.
 export function register(req, res) {
   const body = req.body ?? {};
   const name = requireText(body.name, 'Name', { max: 120 });
@@ -41,8 +42,9 @@ export function register(req, res) {
   }
   if (User.emailTaken(email)) throw new HttpError(409, 'An account with this email already exists');
 
-  const user = User.create({ name, email, password, role: 'student', program, verified: false });
-  res.status(201).json({ token: issueToken(user, { remember: true }), user, ...sendVerification(user) });
+  const verified = config.env === 'development';
+  const user = User.create({ name, email, password, role: 'student', program, verified });
+  res.status(201).json({ token: issueToken(user, { remember: true }), user, ...(verified ? {} : sendVerification(user)) });
 }
 
 export function verifyEmail(req, res) {
