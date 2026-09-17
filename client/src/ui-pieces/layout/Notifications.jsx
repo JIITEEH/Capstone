@@ -17,7 +17,8 @@ const EMPTY_UPCOMING = {
 };
 
 // Bell button with a popover. The badge counts unread notifications: reviews, comments, new
-// submissions, adviser assignments, and scheduled events. Upcoming events are listed beneath.
+// submissions, adviser assignments, scheduled events, and deadline reminders. Upcoming events are
+// listed beneath.
 export default function Notifications() {
   const { user } = useAuth();
   const location = useLocation();

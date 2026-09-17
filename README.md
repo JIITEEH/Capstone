@@ -104,6 +104,7 @@ erDiagram
     theses ||--o{ group_invitations : "invites to"
     users ||--o{ group_invitations : "is invited"
     users ||--o{ notifications : "receives"
+    theses ||--o{ deadline_reminders : "reminded about"
     users ||--o{ audit_log : "acts in (admin)"
     schedules ||--o{ defense_evaluations : "scored in"
     users ||--o{ defense_evaluations : "scores (panelist)"
@@ -210,6 +211,13 @@ erDiagram
         text link
         text read_at
     }
+    deadline_reminders {
+        int thesis_id PK,FK
+        text stage PK
+        text due_on PK
+        text kind PK "due_soon | overdue"
+        text sent_at
+    }
     audit_log {
         int id PK
         int actor_id FK
@@ -245,6 +253,7 @@ erDiagram
 - **`password_resets`** holds one-time reset links. Only a SHA-256 hash of each token is stored. A link expires after 1 hour and is deleted once used. The link is emailed over SMTP (see `DEPLOYMENT.md`); outside production it is also shown on the "Forgot password" page so the flow works without a mail server.
 - **`users.email_verified_at`** is empty until a student who signed up opens the link in their verification email. Until then they can sign in, but can't start a thesis or be added to a group, so nobody can register with a classmate's address and join in their place. Accounts created by an admin, and every account that existed before verification, count as verified. `email_verifications` stores the links, hashed, for 48 hours.
 - **`terms`** are semesters, each with an optional due date per stage in **`term_deadlines`**. One term is current (a partial unique index), and new theses join it through `theses.term_id`; admins can move a thesis. A thesis's next deadline is the earliest stage with a due date and nothing submitted yet; it is **overdue** once that day has passed in the server's time zone (`TZ`). Theses that existed before terms have no term, so the upgrade marks nobody overdue. A term that still has theses can't be deleted.
+- **`deadline_reminders`** records each reminder `npm run reminders` sends: one row per thesis, stage, due date, and kind. A group is reminded about its next deadline 3 days before it (or on the first run after that) and once it is overdue, both as a notification and an email. The row is what stops a second copy, and because the due date is part of the key, moving a deadline earns a fresh reminder. Overdue reminders are only sent within 7 days of the date, so a first run after upgrading doesn't remind groups about deadlines missed long ago.
 - **`theses.in_archive`** decides whether a completed thesis appears in the thesis archive, which every signed-in user can search. It is on by default; an admin turns it off for confidential work. The archive shows only public details (no emails or review feedback) and only the approved final manuscript.
 - **`group_invitations`** records each invitation a group leader sends: `pending`, then `accepted`, `declined`, or `cancelled`. A partial unique index allows one pending invitation per student per group. Pending invitations hold a seat, so a group can't be over-invited. Accepting one withdraws the student's other pending invitations. Inviting a student who is already in another group still succeeds for the leader; only the student is told, when they try to accept, so leaders can't probe who is taken.
 - **`users.token_version`** ends sessions when a password changes. Each sign-in token records it, and every password change raises it, so older tokens are refused.
@@ -337,6 +346,7 @@ Capstone/
 | `npm start`       | Runs the API and serves `client/dist` if it exists    |
 | `npm run db:seed` | Deletes the database and uploads, then loads demo data (development only) |
 | `npm run db:backup` | Copies the database and uploads into `server/backups/`, then removes old ones |
+| `npm run reminders` | Notifies and emails groups whose next deadline is 3 days away or just passed. Run it daily |
 | `npm run lint`    | Checks the code with ESLint                           |
 | `npm test`        | Runs the API tests (each on a throwaway database) and client tests |
 | `npm run test:e2e` | Builds, then opens every page as each demo role in Chrome, at desktop and phone size. Needs Google Chrome |
@@ -357,6 +367,7 @@ Every push and pull request to `main` or `development` runs lint, tests, and the
 
   ```
   30 2 * * * cd /path/to/Capstone && /usr/local/bin/npm run db:backup >> server/backups/backup.log 2>&1
+  0 7 * * *  cd /path/to/Capstone && /usr/local/bin/npm run reminders >> server/backups/reminders.log 2>&1
   # one run makes the backup, prunes old ones, and copies the new one off the machine
   ```
 

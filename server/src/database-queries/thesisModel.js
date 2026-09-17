@@ -16,7 +16,7 @@ const STAGE_ORDER = `CASE d.stage ${Object.keys(STAGES)
 
 // The next deadline a group still has to meet: the earliest stage in its term with a due date and
 // nothing submitted for it yet. Completed theses have none.
-const NEXT_DEADLINE = `term_deadlines nd ON nd.term_id = t.term_id AND t.status != 'completed' AND nd.stage = (
+export const NEXT_DEADLINE = `term_deadlines nd ON nd.term_id = t.term_id AND t.status != 'completed' AND nd.stage = (
     SELECT d.stage FROM term_deadlines d
     WHERE d.term_id = t.term_id
       AND NOT EXISTS (SELECT 1 FROM submissions s WHERE s.thesis_id = t.id AND s.stage = d.stage)

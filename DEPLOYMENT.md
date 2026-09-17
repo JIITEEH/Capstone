@@ -171,20 +171,26 @@ sudo certbot --nginx -d thesis.yourschool.edu
 Certbot edits the nginx config and renews the certificate automatically. Once HTTPS works, the app's
 `Strict-Transport-Security` header tells browsers to use it from then on.
 
-## 9. Back up every night
+## 9. Nightly backups and daily reminders
 
 Nightly backups are not optional on a live system. Install rclone and connect storage once (see the
 Backups section of `README.md`), then add to the service user's crontab (`crontab -e`):
 
 ```
 30 2 * * * cd /home/thesistrack/thesistrack && npm run db:backup >> server/backups/backup.log 2>&1
+0 7 * * *  cd /home/thesistrack/thesistrack && TZ=Asia/Manila npm run reminders >> server/backups/reminders.log 2>&1
 ```
 
-Check it the next morning:
+The second line sends deadline reminders every morning: a notification and an email to each group whose next
+due date is 3 days away, and again once it is overdue. Running it more often is harmless, since each reminder is
+sent once. Set `TZ` to the same time zone as the systemd unit, or a group can be told "due tomorrow" on the day
+itself. Without email set up (section 4), reminders still appear on the bell.
+
+Check both the next morning:
 
 ```bash
 npm run db:backup -- --list
-tail server/backups/backup.log
+tail server/backups/backup.log server/backups/reminders.log
 ```
 
 **Test a restore before you need one.** Restore last night's backup onto a copy of the server once, and

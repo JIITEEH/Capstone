@@ -151,6 +151,29 @@ export function passwordResetEmail({ to, name, resetUrl }) {
   return { to, subject: 'Reset your ThesisTrack password', text, html };
 }
 
+// `headline` and `detail` are the same words as the in-app notification, so both say one thing
+export function deadlineReminderEmail({ to, name, headline, detail, thesisTitle, thesisUrl }) {
+  const text = [
+    `Hi ${name},`,
+    '',
+    `${headline}.`,
+    '',
+    detail,
+    `Thesis: ${thesisTitle}`,
+    '',
+    `Open your thesis: ${thesisUrl}`,
+  ].join('\n');
+
+  const html = `
+    <p>Hi ${escapeHtml(name)},</p>
+    <p><strong>${escapeHtml(headline)}.</strong></p>
+    <p>${escapeHtml(detail)}<br>Thesis: ${escapeHtml(thesisTitle)}</p>
+    <p><a href="${escapeHtml(thesisUrl)}">Open your thesis</a></p>
+  `;
+
+  return { to, subject: `ThesisTrack: ${headline}`, text, html };
+}
+
 export function testEmail({ to, name }) {
   const text = [
     `Hi ${name},`,

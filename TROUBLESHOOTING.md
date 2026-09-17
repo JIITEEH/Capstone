@@ -124,6 +124,19 @@ full computer lab is never locked out together. Restarting the server clears the
 4. A refused action (400, 403, 409) sends nothing, because the notification is in the same transaction.
 5. The bell refreshes every 60 seconds while the tab is visible — `client/src/ui-pieces/layout/Notifications.jsx`.
 
+### "A group wasn't reminded about a deadline"
+
+1. Reminders come from `npm run reminders`, not the running server. Check that the cron line in
+   `DEPLOYMENT.md` section 9 exists, and read `server/backups/reminders.log`.
+2. Only the group's **next** deadline is reminded: the earliest stage with a due date and nothing submitted.
+   No term, a completed thesis, or a stage already submitted means no reminder. See "A thesis shows no deadline".
+3. Timing: 3 days before the date, and once the date has passed. Overdue reminders stop 7 days after the date.
+4. Each reminder is sent once, recorded in `deadline_reminders`. Moving the due date allows a new one.
+5. On the bell but no email? Email follows "Password reset emails never arrive" below. Failed emails are
+   listed in the log and not retried.
+6. Code: `server/src/database/reminders.js` (words, email, sending), `database-queries/reminderModel.js`
+   (`owed`: who is due), `helpers/email.js` → `deadlineReminderEmail`.
+
 ### "Password reset emails never arrive"
 
 1. Sign in as an admin and choose **Send test email** on the dashboard's **Email** card. It says what the
