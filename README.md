@@ -375,7 +375,7 @@ Every push and pull request to `main` or `development` runs lint, tests, and the
 
   ```bash
   npm run db:backup -- --list                                   # see what you have
-  npm run db:backup -- --restore server/backups/2026-09-16T02-30-00
+  npm run db:backup -- --restore server/backups/2026-09-16T02-30-00   # or just 2026-09-16T02-30-00
   npm start                                                     # start again
   ```
 

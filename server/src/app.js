@@ -9,6 +9,8 @@ import { notFound, errorHandler } from './request-filters/errorHandler.js';
 import { securityHeaders } from './request-filters/securityHeaders.js';
 
 const app = express();
+// "X-Powered-By: Express" only tells attackers which framework's weaknesses to try
+app.disable('x-powered-by');
 
 // Behind a proxy, every request arrives from the proxy's address. Without this, rate limits keyed
 // on the address would put every visitor in one bucket, and a few bad attempts would lock out all.

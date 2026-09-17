@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, describe, it } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
-import { backupName, createBackup, listBackups, pruneBackups, restoreBackup, syncToRemote } from '../src/database/backup.js';
+import { backupName, createBackup, listBackups, pruneBackups, resolveBackupFolder, restoreBackup, syncToRemote } from '../src/database/backup.js';
 import { migrate } from '../src/database/migrate.js';
 
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'thesistrack-backup-'));
@@ -159,6 +159,41 @@ describe('restoring a backup', () => {
     const notABackup = path.join(scratch, 'not-a-backup');
     fs.mkdirSync(notABackup, { recursive: true });
     assert.throws(() => restoreBackup(notABackup, system), /does not look like a backup/);
+  });
+});
+
+describe('finding the backup to restore', () => {
+  // npm runs the script from server/, while the README's command is typed from the repository root
+  function layout() {
+    const repo = path.join(scratch, `repo-${++counter}`);
+    const backupDir = path.join(repo, 'server', 'backups');
+    const folder = path.join(backupDir, '2026-09-16T02-30-00');
+    fs.mkdirSync(folder, { recursive: true });
+    fs.writeFileSync(path.join(folder, 'app.db'), '');
+    return { repo, backupDir, folder, scriptCwd: path.join(repo, 'server') };
+  }
+
+  it('accepts the README path typed from the repository root', () => {
+    const { repo, backupDir, folder, scriptCwd } = layout();
+    const found = resolveBackupFolder('server/backups/2026-09-16T02-30-00', { typedFrom: repo, scriptCwd, backupDir });
+    assert.equal(found, folder);
+  });
+
+  it('accepts a path relative to server/', () => {
+    const { backupDir, folder, scriptCwd } = layout();
+    const found = resolveBackupFolder('backups/2026-09-16T02-30-00', { typedFrom: scriptCwd, scriptCwd, backupDir });
+    assert.equal(found, folder);
+  });
+
+  it('accepts just the backup name, as --list prints it', () => {
+    const { repo, backupDir, folder, scriptCwd } = layout();
+    assert.equal(resolveBackupFolder('2026-09-16T02-30-00', { typedFrom: repo, scriptCwd, backupDir }), folder);
+  });
+
+  it('points at what was typed when nothing matches, so the error makes sense', () => {
+    const { repo, backupDir, scriptCwd } = layout();
+    const found = resolveBackupFolder('server/backups/typo', { typedFrom: repo, scriptCwd, backupDir });
+    assert.equal(found, path.join(repo, 'server/backups/typo'));
   });
 });
 

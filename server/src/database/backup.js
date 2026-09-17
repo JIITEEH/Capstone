@@ -130,6 +130,22 @@ export function pruneBackups({ backupDir = config.backupDir, keepDays = config.b
   return removed;
 }
 
+// Finds the folder someone typed after --restore. npm runs this script from server/, so a path
+// copied from the README (server/backups/...) is relative to where they typed it, which npm passes
+// as INIT_CWD. A bare backup name is looked up in the backup directory.
+export function resolveBackupFolder(target, {
+  typedFrom = process.env.INIT_CWD || process.cwd(),
+  scriptCwd = process.cwd(),
+  backupDir = config.backupDir,
+} = {}) {
+  const candidates = [
+    path.resolve(typedFrom, target),
+    path.resolve(scriptCwd, target),
+    path.join(backupDir, path.basename(target)),
+  ];
+  return candidates.find((folder) => fs.existsSync(path.join(folder, 'app.db'))) ?? candidates[0];
+}
+
 // Puts a backup back. The current database and uploads are set aside first, so a restore of the
 // wrong backup can itself be undone.
 export function restoreBackup(folder, {
@@ -225,10 +241,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const target = args[1];
     if (!target) {
       console.error('Which backup? Run "npm run db:backup -- --list" to see them, then');
-      console.error('  npm run db:backup -- --restore server/backups/2026-09-16T17-30-45');
+      console.error('  npm run db:backup -- --restore 2026-09-16T17-30-45');
       process.exit(1);
     }
-    const folder = path.resolve(target);
+    const folder = resolveBackupFolder(target);
     const { replaced } = restoreBackup(folder);
     console.log(`Restored from ${folder}`);
     if (replaced.database) console.log(`  The database that was there is kept at ${replaced.database}`);

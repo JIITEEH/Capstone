@@ -14,6 +14,11 @@ describe('security headers', () => {
     assert.equal(res.headers.get('cross-origin-opener-policy'), 'same-origin');
   });
 
+  it('does not advertise the server framework', async () => {
+    const res = await api.get('/health');
+    assert.equal(res.headers.get('x-powered-by'), null);
+  });
+
   it('locks the content security policy down to this origin', async () => {
     const policy = (await api.get('/health')).headers.get('content-security-policy');
     assert.match(policy, /default-src 'self'/);
