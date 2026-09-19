@@ -28,8 +28,8 @@ export function emailSettings() {
 
 const SECONDS = 1000;
 
-// The sidebar's ring logo, drawn at 3x so it stays sharp on high-density screens
-const LOGO_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../email-images/logo.png');
+// The sidebar's ring logo in white, for the blue banner and footer, drawn at 3x so it stays sharp on high-density screens
+const LOGO_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../email-images/logo-white.png');
 const LOGO_CID = 'thesistrack-logo';
 
 function getTransport() {
@@ -133,10 +133,10 @@ function paragraph(html, { color = COLOR.body, size = 15 } = {}) {
 // A pill button like the web app's, made of a table cell so Outlook draws it too
 function button({ label, url }) {
   return `
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px">
+    <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:8px auto 28px">
       <tr>
         <td bgcolor="${COLOR.primary}" style="border-radius:999px">
-          <a href="${escapeHtml(url)}" target="_blank" style="display:inline-block;padding:12px 28px;border-radius:999px;font-family:${FONT};font-size:15px;font-weight:600;line-height:1.2;color:#ffffff;text-decoration:none">${escapeHtml(label)}</a>
+          <a href="${escapeHtml(url)}" target="_blank" style="display:inline-block;padding:13px 32px;border-radius:999px;font-family:${FONT};font-size:15px;font-weight:600;line-height:1.2;color:#ffffff;text-decoration:none">${escapeHtml(label)}</a>
         </td>
       </tr>
     </table>`;
@@ -145,9 +145,9 @@ function button({ label, url }) {
 // Names the thing the email is about, as a rounded chip
 function chip(label) {
   return `
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 24px">
+    <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:4px auto 24px">
       <tr>
-        <td style="padding:10px 16px;border:1px solid ${COLOR.border};border-radius:10px;background:${COLOR.primarySoft};font-family:${FONT};font-size:15px;font-weight:600;line-height:1.4;color:${COLOR.primaryText}">${escapeHtml(label)}</td>
+        <td align="center" style="padding:10px 18px;border:1px solid ${COLOR.border};border-radius:10px;background:${COLOR.primarySoft};font-family:${FONT};font-size:15px;font-weight:600;line-height:1.4;color:${COLOR.primaryText}">${escapeHtml(label)}</td>
       </tr>
     </table>`;
 }
@@ -160,12 +160,24 @@ function linkFallback(url) {
   );
 }
 
-function logo(size) {
-  return `<img src="cid:${LOGO_CID}" width="${size}" height="${size}" alt="" style="display:block;border:0;outline:none;width:${size}px;height:${size}px">`;
+// Logo and wordmark side by side, in white for the blue bands
+function brand({ logoSize, fontSize, color = '#ffffff' }) {
+  return `
+    <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="padding-right:10px"><img src="cid:${LOGO_CID}" width="${logoSize}" height="${logoSize}" alt="" style="display:block;border:0;outline:none;width:${logoSize}px;height:${logoSize}px"></td>
+        <td style="font-family:${FONT};font-size:${fontSize}px;font-weight:600;letter-spacing:-0.03em;color:${color}">ThesisTrack</td>
+      </tr>
+    </table>`;
 }
 
-// Every email shares this frame: brand line, title, body in a white card, and a footer under it
-// that says why the email was sent. `preheader` is the preview line inboxes show after the subject.
+// The web app's sign-in panel: deep blue with a lighter glow in one corner. Clients that drop
+// gradients fall back to the solid bgcolor.
+const BANNER_BG = `background-color:#1a3aa8;background-image:radial-gradient(120% 90% at 90% 100%, rgba(96,140,255,0.45) 0%, transparent 55%),linear-gradient(160deg,#0b1a55 0%,#1a3aa8 55%,#0a1648 100%)`;
+
+// Every email shares this frame: a blue banner with the logo, a centered title, the body, and a
+// blue footer that says why the email was sent. `preheader` is the preview line inboxes show
+// after the subject.
 function layout({ preheader, title, body, reason }) {
   const year = new Date().getFullYear();
   return `<!doctype html>
@@ -183,38 +195,26 @@ function layout({ preheader, title, body, reason }) {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.page}" style="background:${COLOR.page}">
     <tr>
       <td align="center" style="padding:40px 16px">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;border-collapse:separate">
           <tr>
-            <td bgcolor="${COLOR.card}" style="padding:36px 32px 16px;background:${COLOR.card};border:1px solid ${COLOR.border};border-radius:22px">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px">
-                <tr>
-                  <td style="padding-right:10px">${logo(30)}</td>
-                  <td style="font-family:${FONT};font-size:19px;font-weight:600;letter-spacing:-0.03em;color:${COLOR.text}">ThesisTrack</td>
-                </tr>
-              </table>
-              <h1 style="margin:0 0 20px;font-family:${FONT};font-size:26px;font-weight:600;line-height:1.3;letter-spacing:-0.02em;color:${COLOR.text}">${escapeHtml(title)}</h1>
+            <td align="center" bgcolor="#1a3aa8" style="padding:36px 32px;border-radius:22px 22px 0 0;${BANNER_BG}">
+              ${brand({ logoSize: 36, fontSize: 24 })}
+            </td>
+          </tr>
+          <tr>
+            <td bgcolor="${COLOR.card}" style="padding:40px 40px 16px;background:${COLOR.card};border-left:1px solid ${COLOR.border};border-right:1px solid ${COLOR.border}">
+              <h1 style="margin:0 0 24px;font-family:${FONT};font-size:26px;font-weight:600;line-height:1.3;letter-spacing:-0.02em;text-align:center;color:${COLOR.text}">${escapeHtml(title)}</h1>
               ${body}
             </td>
           </tr>
           <tr>
-            <td style="padding:24px 32px 0">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td valign="top" style="font-family:${FONT};font-size:12px;line-height:1.6;color:${COLOR.muted}">
-                    ThesisTrack · Thesis Management System<br>
-                    ${escapeHtml(reason)}<br>
-                    © ${year} ThesisTrack
-                  </td>
-                  <td valign="top" align="right" width="130" style="padding-left:16px">
-                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td style="padding-right:6px">${logo(20)}</td>
-                        <td style="font-family:${FONT};font-size:15px;font-weight:600;letter-spacing:-0.03em;color:${COLOR.muted}">ThesisTrack</td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
+            <td align="center" bgcolor="#0f2a7a" style="padding:28px 32px;border-radius:0 0 22px 22px;background:#0f2a7a">
+              ${brand({ logoSize: 22, fontSize: 16 })}
+              <p style="margin:12px 0 0;font-family:${FONT};font-size:12px;line-height:1.6;text-align:center;color:#c3d1fb">
+                Thesis Management System<br>
+                ${escapeHtml(reason)}<br>
+                © ${year} ThesisTrack
+              </p>
             </td>
           </tr>
         </table>
