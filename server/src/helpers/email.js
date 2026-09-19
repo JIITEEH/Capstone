@@ -1,4 +1,6 @@
 // Sends email over SMTP. Configure SMTP_HOST and friends in server/.env; see DEPLOYMENT.md.
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import nodemailer from 'nodemailer';
 import config from '../config/index.js';
 
@@ -25,6 +27,10 @@ export function emailSettings() {
 }
 
 const SECONDS = 1000;
+
+// The sidebar's ring logo, drawn at 3x so it stays sharp on high-density screens
+const LOGO_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../email-images/logo.png');
+const LOGO_CID = 'thesistrack-logo';
 
 function getTransport() {
   if (override) return override;
@@ -55,7 +61,9 @@ export async function sendEmail({ to, subject, text, html }) {
     return { skipped: true };
   }
 
-  await mailer.sendMail({ from: config.mail.from, to, subject, text, html });
+  // The logo travels inside the message, so it shows even where remote images are blocked
+  const attachments = html?.includes(`cid:${LOGO_CID}`) ? [{ filename: 'thesistrack.png', path: LOGO_PATH, cid: LOGO_CID }] : [];
+  await mailer.sendMail({ from: config.mail.from, to, subject, text, html, attachments });
   return { sent: true };
 }
 
@@ -103,6 +111,120 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
 }
 
+// The web app's colors and font (client/src/styles/index.css). Mail clients ignore <style> blocks
+// unevenly, so every rule is written inline and the layout is built from tables.
+const COLOR = {
+  page: '#f3f6fc',
+  card: '#ffffff',
+  border: '#e3e8f3',
+  text: '#0f1629',
+  body: '#455069',
+  muted: '#5f687d',
+  primary: '#2451d6',
+  primarySoft: '#eaf0ff',
+  primaryText: '#1a3a9c',
+};
+const FONT = "'Plus Jakarta Sans', 'Inter', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+
+function paragraph(html, { color = COLOR.body, size = 15 } = {}) {
+  return `<p style="margin:0 0 16px;font-family:${FONT};font-size:${size}px;line-height:1.6;color:${color}">${html}</p>`;
+}
+
+// A pill button like the web app's, made of a table cell so Outlook draws it too
+function button({ label, url }) {
+  return `
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px">
+      <tr>
+        <td bgcolor="${COLOR.primary}" style="border-radius:999px">
+          <a href="${escapeHtml(url)}" target="_blank" style="display:inline-block;padding:12px 28px;border-radius:999px;font-family:${FONT};font-size:15px;font-weight:600;line-height:1.2;color:#ffffff;text-decoration:none">${escapeHtml(label)}</a>
+        </td>
+      </tr>
+    </table>`;
+}
+
+// Names the thing the email is about, as a rounded chip
+function chip(label) {
+  return `
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 24px">
+      <tr>
+        <td style="padding:10px 16px;border:1px solid ${COLOR.border};border-radius:10px;background:${COLOR.primarySoft};font-family:${FONT};font-size:15px;font-weight:600;line-height:1.4;color:${COLOR.primaryText}">${escapeHtml(label)}</td>
+      </tr>
+    </table>`;
+}
+
+// For when the button doesn't work: the same link, written out
+function linkFallback(url) {
+  return paragraph(
+    `If the button doesn't work, copy this link into your browser:<br><a href="${escapeHtml(url)}" target="_blank" style="color:${COLOR.primary};word-break:break-all">${escapeHtml(url)}</a>`,
+    { color: COLOR.muted, size: 13 },
+  );
+}
+
+function logo(size) {
+  return `<img src="cid:${LOGO_CID}" width="${size}" height="${size}" alt="" style="display:block;border:0;outline:none;width:${size}px;height:${size}px">`;
+}
+
+// Every email shares this frame: brand line, title, body in a white card, and a footer under it
+// that says why the email was sent. `preheader` is the preview line inboxes show after the subject.
+function layout({ preheader, title, body, reason }) {
+  const year = new Date().getFullYear();
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <title>${escapeHtml(title)}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background:${COLOR.page}">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${escapeHtml(preheader)}</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.page}" style="background:${COLOR.page}">
+    <tr>
+      <td align="center" style="padding:40px 16px">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px">
+          <tr>
+            <td bgcolor="${COLOR.card}" style="padding:36px 32px 16px;background:${COLOR.card};border:1px solid ${COLOR.border};border-radius:22px">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px">
+                <tr>
+                  <td style="padding-right:10px">${logo(30)}</td>
+                  <td style="font-family:${FONT};font-size:19px;font-weight:600;letter-spacing:-0.03em;color:${COLOR.text}">ThesisTrack</td>
+                </tr>
+              </table>
+              <h1 style="margin:0 0 20px;font-family:${FONT};font-size:26px;font-weight:600;line-height:1.3;letter-spacing:-0.02em;color:${COLOR.text}">${escapeHtml(title)}</h1>
+              ${body}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 32px 0">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td valign="top" style="font-family:${FONT};font-size:12px;line-height:1.6;color:${COLOR.muted}">
+                    ThesisTrack · Thesis Management System<br>
+                    ${escapeHtml(reason)}<br>
+                    © ${year} ThesisTrack
+                  </td>
+                  <td valign="top" align="right" width="130" style="padding-left:16px">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="padding-right:6px">${logo(20)}</td>
+                        <td style="font-family:${FONT};font-size:15px;font-weight:600;letter-spacing:-0.03em;color:${COLOR.muted}">ThesisTrack</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 export function verifyEmailEmail({ to, name, verifyUrl, hours }) {
   const text = [
     `Hi ${name},`,
@@ -116,13 +238,19 @@ export function verifyEmailEmail({ to, name, verifyUrl, hours }) {
     "If you didn't create this account, ignore this email.",
   ].join('\n');
 
-  const html = `
-    <p>Hi ${escapeHtml(name)},</p>
-    <p>Welcome to ThesisTrack. Confirm this is your email address:</p>
-    <p><a href="${escapeHtml(verifyUrl)}">Verify my email</a></p>
-    <p>The link works once and expires in ${hours} hours. Until you confirm, you can sign in but can't start or join a thesis group.</p>
-    <p style="color:#6a7389">If you didn't create this account, ignore this email.</p>
-  `;
+  const html = layout({
+    preheader: `Confirm your email to start or join a thesis group. The link expires in ${hours} hours.`,
+    title: 'Confirm your email address',
+    reason: `You received this email because a ThesisTrack account was created with ${to}.`,
+    body: [
+      paragraph(`Hi ${escapeHtml(name)},`, { color: COLOR.text }),
+      paragraph("Welcome to ThesisTrack. Confirm this is your email address, and you'll be able to start or join a thesis group."),
+      button({ label: 'Verify my email', url: verifyUrl }),
+      paragraph(`The link works once and expires in ${hours} hours. Until you confirm, you can sign in but can't start or join a thesis group.`),
+      linkFallback(verifyUrl),
+      paragraph("If you didn't create this account, ignore this email.", { color: COLOR.muted, size: 13 }),
+    ].join(''),
+  });
 
   return { to, subject: 'Verify your ThesisTrack email address', text, html };
 }
@@ -140,13 +268,20 @@ export function passwordResetEmail({ to, name, resetUrl }) {
     "If you didn't ask for this, ignore this email. Your password won't change.",
   ].join('\n');
 
-  const html = `
-    <p>Hi ${escapeHtml(name)},</p>
-    <p>Someone asked to reset the password for your ThesisTrack account.</p>
-    <p><a href="${escapeHtml(resetUrl)}">Choose a new password</a></p>
-    <p>The link works once and expires in 1 hour.</p>
-    <p style="color:#6a7389">If you didn't ask for this, ignore this email. Your password won't change.</p>
-  `;
+  const html = layout({
+    preheader: 'Choose a new password for your ThesisTrack account. The link expires in 1 hour.',
+    title: 'Reset your password',
+    reason: `You received this email because a password reset was requested for ${to}.`,
+    body: [
+      paragraph(`Hi ${escapeHtml(name)},`, { color: COLOR.text }),
+      paragraph('Someone asked to reset the password for your ThesisTrack account:'),
+      chip(to),
+      button({ label: 'Choose a new password', url: resetUrl }),
+      paragraph('The link works once and expires in 1 hour.'),
+      linkFallback(resetUrl),
+      paragraph("If you didn't ask for this, ignore this email. Your password won't change.", { color: COLOR.muted, size: 13 }),
+    ].join(''),
+  });
 
   return { to, subject: 'Reset your ThesisTrack password', text, html };
 }
@@ -164,30 +299,41 @@ export function deadlineReminderEmail({ to, name, headline, detail, thesisTitle,
     `Open your thesis: ${thesisUrl}`,
   ].join('\n');
 
-  const html = `
-    <p>Hi ${escapeHtml(name)},</p>
-    <p><strong>${escapeHtml(headline)}.</strong></p>
-    <p>${escapeHtml(detail)}<br>Thesis: ${escapeHtml(thesisTitle)}</p>
-    <p><a href="${escapeHtml(thesisUrl)}">Open your thesis</a></p>
-  `;
+  const html = layout({
+    preheader: detail,
+    title: headline,
+    reason: 'You received this email because you are a member of this thesis group on ThesisTrack.',
+    body: [
+      paragraph(`Hi ${escapeHtml(name)},`, { color: COLOR.text }),
+      paragraph(escapeHtml(detail)),
+      chip(thesisTitle),
+      button({ label: 'Open your thesis', url: thesisUrl }),
+    ].join(''),
+  });
 
   return { to, subject: `ThesisTrack: ${headline}`, text, html };
 }
 
 export function testEmail({ to, name }) {
+  const sentVia = `Sent as ${config.mail.from}${config.mail.host ? ` through ${config.mail.host}` : ''}.`;
   const text = [
     `Hi ${name},`,
     '',
     'This is a test email from ThesisTrack. Email is working: password reset and verification links will reach your users.',
     '',
-    `Sent as ${config.mail.from}${config.mail.host ? ` through ${config.mail.host}` : ''}.`,
+    sentVia,
   ].join('\n');
 
-  const html = `
-    <p>Hi ${escapeHtml(name)},</p>
-    <p>This is a test email from ThesisTrack. Email is working: password reset and verification links will reach your users.</p>
-    <p style="color:#6a7389">Sent as ${escapeHtml(config.mail.from)}${config.mail.host ? ` through ${escapeHtml(config.mail.host)}` : ''}.</p>
-  `;
+  const html = layout({
+    preheader: 'Email is working: password reset and verification links will reach your users.',
+    title: 'Email is working',
+    reason: 'You received this email because you sent a test from the ThesisTrack admin dashboard.',
+    body: [
+      paragraph(`Hi ${escapeHtml(name)},`, { color: COLOR.text }),
+      paragraph('This is a test email from ThesisTrack. Password reset and verification links will reach your users.'),
+      paragraph(escapeHtml(sentVia), { color: COLOR.muted, size: 13 }),
+    ].join(''),
+  });
 
   return { to, subject: 'ThesisTrack test email', text, html };
 }

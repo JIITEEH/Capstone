@@ -300,7 +300,8 @@ Capstone/
         ├── database-queries/   # SQL, one file per table
         ├── permission-rules/   # who can see and change which records
         ├── request-filters/    # sign-in check, uploads, rate limits, headers, errors
-        └── helpers/            # passwords, validation, files, file signatures
+        ├── helpers/            # passwords, validation, files, file signatures, email templates
+        └── email-images/       # logo embedded in every email
 ```
 
 ## API overview

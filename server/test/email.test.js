@@ -1,5 +1,6 @@
 import './setup.js';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { after, beforeEach, describe, it } from 'node:test';
 import * as User from '../src/database-queries/userModel.js';
 import { passwordResetEmail, sendEmail, useTransport } from '../src/helpers/email.js';
@@ -99,8 +100,22 @@ describe('the email itself', () => {
       name: '<img src=x onerror=alert(1)>',
       resetUrl: 'http://localhost:5173/reset-password?token=abc',
     });
-    assert.ok(!mail.html.includes('<img'), 'the name cannot inject markup');
+    assert.ok(!mail.html.includes('<img src=x'), 'the name cannot inject markup');
     assert.ok(mail.html.includes('&lt;img'));
+  });
+
+  it('carries the logo inside the message', async () => {
+    await sendEmail(passwordResetEmail({ to: 'x@tms.edu', name: 'Ana', resetUrl: 'http://localhost:5173/reset-password?token=abc' }));
+    const [mail] = outbox;
+    assert.ok(mail.html.includes('cid:thesistrack-logo'));
+    assert.equal(mail.attachments.length, 1);
+    assert.equal(mail.attachments[0].cid, 'thesistrack-logo');
+    assert.ok(fs.existsSync(mail.attachments[0].path), 'the logo file ships with the server');
+  });
+
+  it('sends a plain message without the logo', async () => {
+    await sendEmail({ to: 'x@tms.edu', subject: 'Test', text: 'Hello' });
+    assert.deepEqual(outbox[0].attachments, []);
   });
 
   it('skips quietly when no mail server is configured', async () => {
