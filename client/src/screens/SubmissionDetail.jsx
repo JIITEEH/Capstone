@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import {
   Check,
   ChevronLeft,
@@ -12,11 +12,14 @@ import {
   MessageSquare,
   RotateCcw,
   Send,
+  Upload,
 } from 'lucide-react';
 import Avatar from '../ui-pieces/basics/Avatar.jsx';
 import { RoleBadge, SubmissionStatusBadge } from '../ui-pieces/basics/Badge.jsx';
 import { EmptyState, LoadState } from '../ui-pieces/basics/Feedback.jsx';
+import Modal from '../ui-pieces/basics/Modal.jsx';
 import PageHeader from '../ui-pieces/basics/PageHeader.jsx';
+import SubmissionForm from '../ui-pieces/thesis/SubmissionForm.jsx';
 import { useAuth } from '../shared-state/AuthContext.jsx';
 import { useToast } from '../shared-state/ToastContext.jsx';
 import useApi from '../reusable-logic/useApi.js';
@@ -233,10 +236,12 @@ export default function SubmissionDetail() {
   const { id } = useParams();
   const { user } = useAuth();
   const toast = useToast();
+  const navigate = useNavigate();
+  const [resubmitting, setResubmitting] = useState(false);
   const { data, loading, error, reload } = useApi(() => api.getSubmission(id), [id]);
 
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
-  const { submission, thesis, comments, previousVersion } = data;
+  const { submission, thesis, comments, previousVersion, canResubmit } = data;
   const stageLabel = STAGE_LABELS[submission.stage];
   const isResubmission = submission.version > 1;
   const isPdf = (submission.mime_type ?? '').includes('pdf') || (submission.file_name ?? '').toLowerCase().endsWith('.pdf');
@@ -264,6 +269,14 @@ export default function SubmissionDetail() {
           </Link>
         }
         title={isResubmission ? `Version ${submission.version} of ${stageLabel}` : stageLabel}
+        actions={
+          canResubmit && (
+            <button type="button" className="btn btn-primary" onClick={() => setResubmitting(true)}>
+              <Upload size={16} />
+              Upload a revised version
+            </button>
+          )
+        }
         subtitle={
           <span className="header-meta">
             <SubmissionStatusBadge status={submission.status} />
@@ -418,6 +431,25 @@ export default function SubmissionDetail() {
           </section>
         </aside>
       </div>
+
+      <Modal
+        open={resubmitting}
+        title={`Version ${submission.version + 1} of ${stageLabel}`}
+        description="Your adviser will see this alongside the feedback they left on this version."
+        onClose={() => setResubmitting(false)}
+      >
+        <SubmissionForm
+          stages={[{ key: submission.stage, label: stageLabel }]}
+          onCancel={() => setResubmitting(false)}
+          onSubmit={async (formData) => {
+            const created = await api.createSubmission(thesis.id, formData);
+            setResubmitting(false);
+            toast.success('Revised version uploaded for review');
+            // Land on the new version, which opens showing the feedback it answers
+            navigate(`/submissions/${created.id}`);
+          }}
+        />
+      </Modal>
     </>
   );
 }

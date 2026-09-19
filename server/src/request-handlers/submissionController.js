@@ -19,6 +19,17 @@ function loadSubmission(user, rawId) {
   return { submission, thesis };
 }
 
+// Whether the student can answer a sent-back submission from this page, instead of going back to
+// the thesis to start one. Only offered on the newest version at the stage, so an older version's
+// page doesn't offer it as well. createSubmission re-checks all of this before accepting the file.
+function canResubmit(user, submission, thesis, isNewestAtStage) {
+  if (user.role !== 'student') return false;
+  if (submission.status !== 'revisions_requested' || !isNewestAtStage) return false;
+  if (thesis.status === 'completed') return false;
+  if (Submission.hasPending(thesis.id)) return false;
+  return !Submission.isStageApproved(thesis.id, submission.stage);
+}
+
 export function getSubmission(req, res) {
   const { submission, thesis } = loadSubmission(req.user, req.params.id);
   const { version, total } = Submission.versionInfo(submission.id);
@@ -29,6 +40,7 @@ export function getSubmission(req, res) {
     // What this version replaces, so an adviser can check the requested revisions were made.
     // Explicitly null for a first attempt: an undefined would be dropped from the JSON entirely.
     previousVersion: Submission.findPreviousVersion(submission.id) ?? null,
+    canResubmit: canResubmit(req.user, submission, thesis, version === total),
   });
 }
 
